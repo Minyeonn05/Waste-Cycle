@@ -1,5 +1,5 @@
 // server/src/middleware/authMiddleware.js
-import { auth } from '../config/firebaseConfig.js';
+import { auth, db } from '../config/firebaseConfig.js';
 
 export const verifyToken = async (req, res, next) => {
   try {
@@ -17,13 +17,18 @@ export const verifyToken = async (req, res, next) => {
     // ตรวจสอบ token กับ Firebase
     const decodedToken = await auth.verifyIdToken(token);
     
+    // ดึงข้อมูล role จาก Firestore
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    
     // เพิ่มข้อมูล user เข้าไปใน request
     req.user = {
       uid: decodedToken.uid,
       email: decodedToken.email,
-      displayName: decodedToken.name,
-      photoURL: decodedToken.picture,
-      emailVerified: decodedToken.email_verified
+      displayName: decodedToken.name || userData.displayName,
+      photoURL: decodedToken.picture || userData.photoURL,
+      emailVerified: decodedToken.email_verified,
+      role: userData.role || 'buyer' // buyer, seller, admin
     };
     
     next();
@@ -42,17 +47,4 @@ export const verifyToken = async (req, res, next) => {
       error: 'Invalid token'
     });
   }
-};
-
-// Middleware สำหรับตรวจสอบ role (optional)
-export const requireRole = (role) => {
-  return (req, res, next) => {
-    if (req.user.role !== role) {
-      return res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions'
-      });
-    }
-    next();
-  };
 };

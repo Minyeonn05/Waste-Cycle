@@ -112,7 +112,7 @@ export default function App() {
           // (ข้อมูลสมมติ)
           role: 'user', 
           farmName: currentUser.email.split('@')[0],
-          location: { lat: 13.7563, lng: 100.5018 }, // 👈 (สมมติ) ตำแหน่ง user
+          location: { lat: 18.7883, lng: 98.9853 },
           verified: true
         });
         setCurrentPage('dashboard');

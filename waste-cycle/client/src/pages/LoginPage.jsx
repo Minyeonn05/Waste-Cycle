@@ -1,7 +1,7 @@
 // client/src/pages/LoginPage.jsx
 import { useState } from 'react';
 import { Button } from '../component/ui/button.jsx';
-import { Input } from '../component/ui//input.jsx';
+import { Input } from '../component/ui/input.jsx';
 import { Label } from '../component/ui/label.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card.jsx';
 import { ArrowLeft, Recycle } from 'lucide-react';
@@ -10,35 +10,73 @@ import { ArrowLeft, Recycle } from 'lucide-react';
 import { auth } from '../firebaseClientConfig'; // (จากไฟล์ที่เราเพิ่งสร้าง)
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
+// 2. 👈 ฟังก์ชันสำหรับเช็กอีเมล (Regex ง่ายๆ)
+const isEmailValid = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
 export function LoginPage({ onLogin, onBack }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const [isRegister, setIsRegister] = useState(false); // 👈 เพิ่ม state สำหรับสลับหน้า
+  const [isRegister, setIsRegister] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setError(null);
 
+    // --- 3. 👈 [ส่วนที่ 1] การตรวจสอบก่อนส่ง (Client-Side Validation) ---
+
+    // 3.1 เช็กรูปแบบอีเมล
+    if (!isEmailValid(email)) {
+      setError('รูปแบบอีเมลไม่ถูกต้อง');
+      return; // 👈 หยุดทำงาน
+    }
+
+    // 3.2 เช็ก "รหัสไม่ครบ" (สำหรับตอนสมัคร)
+    if (isRegister && password.length < 6) {
+      setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+      return; // 👈 หยุดทำงาน
+    }
+
+    // --- 4. 👈 [ส่วนที่ 2] การส่งไป Firebase ---
     try {
-      let userCredential;
       if (isRegister) {
-        // 2. โหมดสมัครสมาชิก
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // โหมดสมัครสมาชิก
+        await createUserWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged ใน App.jsx จะจัดการที่เหลือเอง
       } else {
-        // 3. โหมด Login
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // โหมด Login
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged ใน App.jsx จะจัดการที่เหลือเอง
       }
       
-      const user = userCredential.user;
-
-      // 4. ส่ง user "จริง" กลับไปที่ App.jsx (onLogin จะถูกเรียกโดย onAuthStateChanged)
-      // เราจึงไม่จำเป็นต้องเรียก onLogin(user) ที่นี่แล้ว
-      // onAuthStateChanged ใน App.jsx จะจัดการเอง
-
     } catch (err) {
-      console.error("Firebase Auth Error: ", err.message);
-      setError(err.message); // 5. แสดง Error
+      // --- 5. 👈 [ส่วนที่ 3] การจัดการ Error ที่ Firebase ส่งกลับมา ---
+      console.error("Firebase Auth Error: ", err.code, err.message);
+      
+      // แปลง Error code เป็นภาษาไทย
+      switch (err.code) {
+        case 'auth/invalid-credential':
+        case 'auth/user-not-found': // (บางที Firebase ก็ส่งอันนี้)
+        case 'auth/wrong-password': // (บางที Firebase ก็ส่งอันนี้)
+          setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+          break;
+        case 'auth/invalid-email':
+          setError('รูปแบบอีเมลไม่ถูกต้อง');
+          break;
+        case 'auth/email-already-in-use': // (สำหรับตอนสมัคร)
+          setError('อีเมลนี้มีผู้ใช้งานแล้ว');
+          break;
+        case 'auth/weak-password': // (สำหรับตอนสมัคร)
+          setError('รหัสผ่านสั้นเกินไป (ต้องอย่างน้อย 6 ตัวอักษร)');
+          break;
+        case 'auth/too-many-requests':
+          setError('คุณพยายามบ่อยเกินไป กรุณาลองใหม่ในภายหลัง');
+          break;
+        default:
+          setError('เกิดข้อผิดพลาด: ' + err.message);
+      }
     }
   };
 
@@ -61,7 +99,6 @@ export function LoginPage({ onLogin, onBack }) {
           </CardHeader>
           
           <CardContent>
-            {/* 6. เปลี่ยน onSubmit */}
             <form onSubmit={handleAuth} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">อีเมล</Label>
@@ -87,19 +124,16 @@ export function LoginPage({ onLogin, onBack }) {
                 />
               </div>
 
-              {/* 7. แสดง Error ถ้ามี */}
+              {/* 6. 👈 จุดแสดง Error (ไม่ว่าจะเป็น Validation หรือจาก Firebase) */}
               {error && (
                 <p className="text-sm text-red-600">{error}</p>
               )}
               
-              {/* (ลบ Checkbox "ผู้ดูแลระบบ" ออก) */}
-
               <Button type="submit" className="w-full">
                 {isRegister ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}
               </Button>
             </form>
 
-            {/* 8. เพิ่มปุ่มสลับโหมด */}
             <div className="mt-4 text-center text-sm">
               <Button variant="link" onClick={() => setIsRegister(!isRegister)}>
                 {isRegister ? 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ' : 'ยังไม่มีบัญชี? สมัครสมาชิก'}

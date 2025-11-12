@@ -6,12 +6,12 @@ import { getAuth } from "firebase/auth";
 // 🚨🚨🚨 แทนที่ด้วย Firebase Config ของคุณ 🚨🚨🚨
 // (ไปที่ Firebase Console -> Project Settings -> General -> Your apps -> Web)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDQwZJTHaAS4JLEo2CExBp_3lbGJMHqYCo",
+  authDomain: "waste-cy.firebaseapp.com",
+  projectId: "waste-cy",
+  storageBucket: "waste-cy.firebasestorage.app",
+  messagingSenderId: "27038277363",
+  appId: "1:27038277363:web:33ec29157710e443cae186"
 };
 
 // Initialize Firebase

@@ -9,7 +9,10 @@ import productRoutes from './routes/productRoutes.js';
 import matchingRoutes from './routes/matchingRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import fertilizerRoutes from './routes/fertilizerRoutes.js';
+
 import { rateLimitMiddleware } from './middleware/rateLimitMiddleware.js';
+
+import chatRoutes from './routes/chatRoutes.js';
 
 dotenv.config();
 
@@ -51,6 +54,7 @@ app.use('/api/matching', matchingRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/advisor', fertilizerRoutes);
 app.use('/api/chat', chatRoutes);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 

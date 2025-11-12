@@ -1,12 +1,14 @@
+// client/src/pages/Dashboard.jsx
 import { Package, ShoppingCart, TrendingUp, Users, Truck, CheckCircle, MapPin, Star, Eye, Edit, Trash2, MessageCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
-import { Button } from '../component/ui/button';
-import { Badge } from '../component/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../component/ui/select';
-import { Input } from '../component/ui/input';
-
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card.jsx';
+import { Button } from '../component/ui/button.jsx';
+import { Badge } from '../component/ui/badge.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../component/ui/select.jsx';
+import { Input } from '../component/ui/input.jsx';
 import { useState } from 'react';
 
+// 1. 👈 เพิ่ม import สำหรับ Map
+import { Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 
 
 export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDelete, onChat }) {
@@ -20,36 +22,66 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
     }
   };
 
+  // 2. 👈 กำหนดตำแหน่งศูนย์กลางแผนที่ (จาก user)
+  const userLocation = user.location || { lat: 13.7563, lng: 100.5018 }; // กทม. เป็น default
+
+  // 3. 👈 (สำคัญ) เราจะใช้ข้อมูล `coordinates` ที่อยู่ใน `posts`
+  // (ซึ่งผมเพิ่ม mock data ไปให้ใน App.jsx แล้ว)
+  const postsWithLocations = posts.filter(p => p.coordinates);
+
+
   if (user.role === 'admin') {
     return <AdminDashboard onNavigate={onNavigate} />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Map Section */}
-      <div className="relative h-[300px] md:h-[400px] bg-gradient-to-br from-green-100 to-blue-100">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <p className="text-gray-600">แผนที่แสดงตำแหน่งฟาร์ม</p>
-            <p className="text-sm text-gray-500">(จะเชื่อมต่อกับ Google Maps API)</p>
-          </div>
-        </div>
+      
+      {/* 4. 👈🔻🔻🔻 แทนที่ Map Section ตรงนี้ 🔻🔻🔻 */}
+      <div className="relative h-[300px] md:h-[400px] bg-gray-200">
+        <Map
+          style={{ width: '100%', height: '100%' }}
+          defaultCenter={userLocation}
+          defaultZoom={12}
+          gestureHandling={'greedy'}
+          disableDefaultUI={true}
+          // mapId={"YOUR_MAP_ID"} // (Optional) ใส่ Map ID ของคุณ
+        >
+          {/* ปักหมุดตำแหน่งของ User (สีน้ำเงิน) */}
+          <AdvancedMarker 
+            position={userLocation} 
+            title={user.farmName}
+          >
+            {/* ไอคอนนี้จะดูเด่นขึ้นมา */}
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              backgroundColor: 'blue',
+              border: '2px solid white',
+              boxShadow: '0 0 5px rgba(0,0,0,0.5)'
+            }} />
+          </AdvancedMarker>
 
-        {/* Map markers examples */}
-        <div className="absolute top-20 left-20 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm shadow-lg">
-          เสกสรรค์ ฟาร์ม, บุเกอร์
-        </div>
-        <div className="absolute bottom-32 left-32 bg-pink-500 text-white px-3 py-1 rounded-full text-sm shadow-lg">
-          ไอซ์รมี ฟาร์ม, บูอย
-        </div>
-        <div className="absolute top-32 right-24 bg-orange-600 text-white px-3 py-1 rounded-full text-sm shadow-lg">
-          ยังเรง ฟาร์ม, แนว
-        </div>
+          {/* ปักหมุด Post ทั้งหมดของ User (สีเขียว) */}
+          {postsWithLocations.map(post => (
+            <AdvancedMarker
+              key={post.id}
+              position={post.coordinates}
+              title={post.title}
+              onClick={() => onViewDetail(post.id)}
+            >
+              <Package className="w-8 h-8 text-green-700" />
+            </AdvancedMarker>
+          ))}
+        </Map>
       </div>
+      {/* 🔺🔺🔺 สิ้นสุด Map Section 🔺🔺🔺 */}
+
 
       <div className="container mx-auto px-4 -mt-20 relative z-10">
-        {/* Search Filters */}
+        
+        {/* ... (Search Filters Card - เหมือนเดิม) ... */}
         <Card className="mb-6 shadow-lg">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -95,8 +127,8 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
             </Button>
           </CardContent>
         </Card>
-
-        {/* My Posts Section */}
+        
+        {/* ... (My Posts Section - เหมือนเดิม) ... */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl">โพสต์ของฉัน ({posts.length})</h2>
@@ -191,8 +223,8 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
             </Card>
           )}
         </div>
-
-        {/* Quick Stats */}
+        
+        {/* ... (Quick Stats - เหมือนเดิม) ... */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="pt-6 text-center">
@@ -232,6 +264,7 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
 }
 
 function AdminDashboard({ onNavigate }) {
+  // ... (โค้ด AdminDashboard เหมือนเดิม)
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl mb-6">แดชบอร์ดผู้ดูแลระบบ</h1>

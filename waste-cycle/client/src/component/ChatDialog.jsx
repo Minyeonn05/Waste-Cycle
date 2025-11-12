@@ -1,43 +1,85 @@
-import { useState } from 'react';
+// client/src/component/ChatDialog.jsx
+import { useState, useEffect, useRef } from 'react';
 import { X, Send } from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card.jsx';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card.jsx';
 
-export function ChatDialog({ post, currentUser, onClose }) {
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      senderId: post.userId,
-      text: 'สวัสดีครับ สนใจมูลสัตว์ของเราไหมครับ',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-    },
-  ]);
+// 1. 👈 IMPORT DB จากที่เราสร้างไว้
+import { db } from '../firebaseClientConfig.js'; 
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp, 
+  query, 
+  orderBy, 
+  onSnapshot 
+} from 'firebase/firestore';
+
+
+export function ChatDialog({ roomId, post, currentUser, onClose }) {
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef(null);
 
-  const handleSend = () => {
-    if (!newMessage.trim()) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-    const message = {
-      id: Date.now().toString(),
-      senderId: currentUser.id,
-      text: newMessage,
-      timestamp: new Date().toISOString(),
-    };
+  // 2. 👈 [หัวใจ] Effect นี้จะ "ดักฟัง" ข้อความใหม่จาก Firestore
+  useEffect(() => {
+    if (!roomId) return; // ถ้ายังไม่มี roomId ก็ไม่ต้องทำอะไร
 
-    setMessages([...messages, message]);
-    setNewMessage('');
+    setLoading(true);
+    // สร้าง query ไปยัง sub-collection 'messages' ภายในห้องแชต
+    const messagesCol = collection(db, 'chat_rooms', roomId, 'messages');
+    const q = query(messagesCol, orderBy('timestamp', 'asc'));
 
-    // Simulate response after 1 second
-    setTimeout(() => {
-      const response = {
-        id: (Date.now() + 1).toString(),
-        senderId: post.userId,
-        text: 'ขอบคุณที่สนใจครับ ยินดีให้คำปรึกษาครับ',
-        timestamp: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, response]);
-    }, 1000);
+    // onSnapshot คือการเชื่อมต่อแบบ Real-time
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const msgs = [];
+      querySnapshot.forEach((doc) => {
+        msgs.push({ id: doc.id, ...doc.data() });
+      });
+      setMessages(msgs);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error listening to messages: ", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe(); // Cleanup listener
+
+  }, [roomId]); // ทำงานใหม่เมื่อ roomId เปลี่ยน
+
+  useEffect(scrollToBottom, [messages]);
+
+  // 3. 👈 [หัวใจ] ฟังก์ชันส่งข้อความ
+  const handleSend = async () => {
+    if (!newMessage.trim() || !currentUser) return;
+
+    try {
+      const messagesCol = collection(db, 'chat_rooms', roomId, 'messages');
+      
+      await addDoc(messagesCol, {
+        text: newMessage,
+        senderId: currentUser.id,
+        senderName: currentUser.displayName,
+        timestamp: serverTimestamp() // 👈 ใช้เวลาของ Server
+      });
+
+      setNewMessage('');
+    } catch (error) {
+      console.error("Error sending message: ", error);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
@@ -47,7 +89,7 @@ export function ChatDialog({ post, currentUser, onClose }) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>แชทกับ {post.farmName}</CardTitle>
-              <p className="text-sm text-gray-600 mt-1">{post.title}</p>
+              <CardDescription className="text-sm text-gray-600 mt-1">{post.title}</CardDescription>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-5 h-5" />
@@ -56,6 +98,13 @@ export function ChatDialog({ post, currentUser, onClose }) {
         </CardHeader>
 
         <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+          {loading && <p className="text-center text-gray-500">กำลังโหลดแชต...</p>}
+          
+          {!loading && messages.length === 0 && (
+            <p className="text-center text-gray-500">เริ่มการสนทนา</p>
+          )}
+
+          {/* 4. 👈 แสดงผลข้อความจริง */}
           {messages.map((message) => {
             const isMe = message.senderId === currentUser.id;
             return (
@@ -72,19 +121,21 @@ export function ChatDialog({ post, currentUser, onClose }) {
                 >
                   <p>{message.text}</p>
                   <p
-                    className={`text-xs mt-1 ${
+                    className={`text-xs mt-1 text-right ${
                       isMe ? 'text-green-100' : 'text-gray-500'
                     }`}
                   >
-                    {new Date(message.timestamp).toLocaleTimeString('th-TH', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {/* 5. 👈 แปลง Timestamp ของ Firebase */}
+                    {message.timestamp?.toDate ?
+                      message.timestamp.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) :
+                      '...'
+                    }
                   </p>
                 </div>
               </div>
             );
           })}
+          <div ref={messagesEndRef} />
         </CardContent>
 
         <div className="border-t p-4">
@@ -92,7 +143,7 @@ export function ChatDialog({ post, currentUser, onClose }) {
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              onKeyPress={handleKeyPress}
               placeholder="พิมพ์ข้อความ..."
               className="flex-1"
             />

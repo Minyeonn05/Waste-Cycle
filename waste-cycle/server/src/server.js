@@ -51,7 +51,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/advisor', fertilizerRoutes);
-
+app.use('/api/chat', chatRoutes);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 

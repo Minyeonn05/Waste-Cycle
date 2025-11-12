@@ -1,7 +1,10 @@
 // server/src/server.js
+import dotenv from 'dotenv';
+dotenv.config();
+// 🚨 1. รัน dotenv.config() เป็นอย่างแรกสุด! 🚨
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import errorHandler from './middleware/errorMiddleware.js';
 
 // Import Routes
@@ -14,11 +17,10 @@ import fertilizerRoutes from './routes/fertilizerRoutes.js';
 import matchingRoutes from './routes/matchingRoutes.js';
 import farmRoutes from './routes/farmRoutes.js';
 import productRoutes from './routes/productRoutes.js';
-
-// 🚨 1. เพิ่มบรรทัดนี้ครับ 🚨
 import chatRoutes from './routes/chatRoutes.js'; 
 
-dotenv.config();
+// 🚨 2. ลบ dotenv.config(); (บรรทัดที่ 19 เดิม) ออกจากตรงนี้ 🚨
+// (เพราะเราย้ายไปไว้ข้างบนสุดแล้ว)
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -54,13 +56,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/fertilizer', fertilizerRoutes);
 app.use('/api/matching', matchingRoutes);
-
-// 🚨 2. แก้ไข app.push เป็น app.use ครับ 🚨 (นี่คือบรรทัดที่ 51 เดิม)
 app.use('/api/farms', farmRoutes); 
-
 app.use('/api/products', productRoutes);
-
-// บรรทัดนี้ (บรรทัดที่ 53 เดิม) ก็จะทำงานได้ถูกต้องแล้ว
 app.use('/api/chat', chatRoutes);
 
 // 404 handler

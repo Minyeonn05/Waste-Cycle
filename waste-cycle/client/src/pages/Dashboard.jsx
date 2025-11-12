@@ -1,9 +1,9 @@
 import { Package, ShoppingCart, TrendingUp, Users, Truck, CheckCircle, MapPin, Star, Eye, Edit, Trash2, MessageCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Input } from './ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
+import { Button } from '../component/ui/button';
+import { Badge } from '../component/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../component/ui/select';
+import { Input } from '../component/ui/input';
 
 import { useState } from 'react';
 

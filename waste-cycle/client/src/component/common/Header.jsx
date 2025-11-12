@@ -1,5 +1,5 @@
 import { Recycle, LogOut, Menu, X } from 'lucide-react';
-import { Button } from './ui/button.jsx';
+import { Button } from '../ui/button';
 import { useState } from 'react';
 
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from '../component/ui/button';
+import { Input } from '../component/ui/input';
+import { Label } from '../component/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../component/ui/card";
 import { ArrowLeft, Recycle } from 'lucide-react';
 
 

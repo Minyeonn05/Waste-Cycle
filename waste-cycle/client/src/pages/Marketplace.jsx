@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Search, MapPin, Filter, Star, Eye, Edit, Trash2, MessageCircle, ShoppingCart } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Slider } from './ui/slider';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
+import { Button } from '../component/ui/button';
+import { Input } from '../component/ui/input';
+import { Label } from '../component/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../component/ui/select';
+import { Slider } from "../component/ui/slider";
+import { Badge } from "../component/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/ui/tabs";
 
 
 

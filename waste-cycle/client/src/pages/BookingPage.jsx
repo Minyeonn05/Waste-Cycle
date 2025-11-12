@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Calendar, Package, User, MapPin, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
+import { Button } from '../component/ui/button';
+import { Badge } from '../component/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/ui/tabs";
 
 
 

@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Calculator, Sprout, MapPin, TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
-
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
+import { Button } from '../component/ui/button';
+import { Input } from '../component/ui/input';
+import { Label } from "../component/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/ui/select";
+import { Badge } from "../component/ui/badge";
 
 
 

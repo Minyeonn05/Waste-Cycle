@@ -1,8 +1,8 @@
 import { ArrowLeft, MapPin, Calendar, Package, DollarSign, Edit, Trash2, MessageCircle, ShoppingCart } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Card, CardContent, CardHeader, CardTitle } from '../component/ui/card';
+import { Button } from '../component/ui/button';
+import { Badge } from '../component/ui/badge';
+import { ImageWithFallback } from "../component/figma/ImageWithFallback";
 
 
 

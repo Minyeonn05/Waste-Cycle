@@ -1,8 +1,6 @@
 import { Recycle, ArrowRight, Sprout, Beef, TrendingUp, Globe } from 'lucide-react';
-import { Button } from './ui/button';
-import { ImageWithFallback } from './figma/ImageWithFallback';
-
-
+import { Button } from '../component/ui/button';
+import { ImageWithFallback } from "../component/figma/ImageWithFallback";
 
 export function LandingPage({ onGetStarted }) {
   return (

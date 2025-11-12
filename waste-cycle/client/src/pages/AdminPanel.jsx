@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Users, FileText, CheckCircle, XCircle, AlertTriangle, Search } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './component/ui/card.jsx';
-import { Button } from './component/ui/button.jsx';
-import { Input } from './component/ui/input.jsx';
-import { Badge } from './component/ui/badge.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card.jsx';
+import { Button } from "../component/ui/button";
+import { Input } from "../component/ui/input";
+import { Badge } from "../component/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/ui/tabs";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from './ui/table.jsx';
+} from "../component/ui/table";
 
 
 

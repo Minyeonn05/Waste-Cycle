@@ -4,7 +4,7 @@ import { Header } from './component/common/Header.jsx';
 import { LandingPage } from './pages/LandingPage.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
 import { Dashboard } from './pages/Dashboard.jsx';
-import  Marketplace from './pages/Marketplace.jsx';
+import { Marketplace } from './pages/Marketplace.jsx';
 import { CreatePost } from './component/CreatePost.jsx';
 import { PostDetail } from './pages/PostDetail.jsx';
 import { BookingPage } from './pages/BookingPage.jsx';

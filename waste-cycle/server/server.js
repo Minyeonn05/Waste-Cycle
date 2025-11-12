@@ -5,22 +5,23 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import errorHandler from './middleware/errorMiddleware.js';
+import errorHandler from './src/middleware/errorMiddleware.js';
 
 // Import Routes
-import wasteRoutes from './routes/wasteRoutes.js';
-import communityRoutes from './routes/communityRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import authRoutes from './routes/authRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js';
-import fertilizerRoutes from './routes/fertilizerRoutes.js';
-import matchingRoutes from './routes/matchingRoutes.js';
-import farmRoutes from './routes/farmRoutes.js';
-import productRoutes from './routes/productRoutes.js';
-import chatRoutes from './routes/chatRoutes.js'; 
+import wasteRoutes from './src/routes/wasteRoutes.js';
+import communityRoutes from './src/routes/communityRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
+import bookingRoutes from './src/routes/bookingRoutes.js';
+import fertilizerRoutes from './src/routes/fertilizerRoutes.js';
+import matchingRoutes from './src/routes/matchingRoutes.js';
+import farmRoutes from './src/routes/farmRoutes.js';
+import productRoutes from './src/routes/productRoutes.js';
 
-// 🚨 2. ลบ dotenv.config(); (บรรทัดที่ 19 เดิม) ออกจากตรงนี้ 🚨
-// (เพราะเราย้ายไปไว้ข้างบนสุดแล้ว)
+// 🚨 2. เพิ่ม import chatRoutes 🚨
+import chatRoutes from './src/routes/chatRoutes.js'; 
+
+// (ลบ dotenv.config() จากบรรทัดที่ 19 เดิม)
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -33,13 +34,13 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
+// ... (Logging middleware - เหมือนเดิม) ...
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
-// Health check endpoint
+// ... (Health check - เหมือนเดิม) ...
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -56,8 +57,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/fertilizer', fertilizerRoutes);
 app.use('/api/matching', matchingRoutes);
+
+// 🚨 3. แก้ไข app.push เป็น app.use ครับ 🚨 (บรรทัดที่ 51 เดิม)
 app.use('/api/farms', farmRoutes); 
+
 app.use('/api/products', productRoutes);
+
+// (บรรทัดที่ 53 เดิม)
 app.use('/api/chat', chatRoutes);
 
 // 404 handler

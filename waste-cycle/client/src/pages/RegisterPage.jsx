@@ -5,25 +5,34 @@ import { Label } from '../component/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../component/ui/card";
 import { ArrowLeft, Recycle } from 'lucide-react';
 
-export function LoginPage({ onLogin, onBack, onRegister }) {
+export function RegisterPage({ onRegister, onBack }) {
+  const [name, setName] = useState('');
+  const [farmName, setFarmName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleRegister = (e) => {
     e.preventDefault();
 
-    const mockUser = {
-      id: '1',
+    if (password !== confirmPassword) {
+      alert('รหัสผ่านไม่ตรงกัน');
+      return;
+    }
+
+    // Mock registration
+    const newUser = {
+      id: Date.now().toString(),
+      name,
       email,
-      name: email.split('@')[0],
+      farmName,
       role: isAdmin ? 'admin' : 'user',
-      farmName: 'ฟาร์มของฉัน',
-      location: { lat: 13.7563, lng: 100.5018 },
-      verified: true
+      verified: false,
+      location: { lat: 13.7563, lng: 100.5018 }
     };
 
-    onLogin(mockUser);
+    onRegister(newUser);
   };
 
   return (
@@ -38,12 +47,36 @@ export function LoginPage({ onLogin, onBack, onRegister }) {
             <div className="flex justify-center mb-4">
               <Recycle className="w-12 h-12 text-green-600" />
             </div>
-            <CardTitle>เข้าสู่ระบบ Waste-Cycle</CardTitle>
-            <CardDescription>เข้าสู่ระบบเพื่อซื้อและขายของเสีย</CardDescription>
+            <CardTitle>ลงทะเบียน Waste-Cycle</CardTitle>
+            <CardDescription>สร้างบัญชีใหม่สำหรับฟาร์มของคุณ</CardDescription>
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">ชื่อผู้ใช้</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="ชื่อของคุณ"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="farmName">ชื่อฟาร์ม</Label>
+                <Input
+                  id="farmName"
+                  type="text"
+                  placeholder="ชื่อฟาร์มของคุณ"
+                  value={farmName}
+                  onChange={(e) => setFarmName(e.target.value)}
+                  required
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">อีเมล</Label>
                 <Input
@@ -68,6 +101,18 @@ export function LoginPage({ onLogin, onBack, onRegister }) {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -77,23 +122,18 @@ export function LoginPage({ onLogin, onBack, onRegister }) {
                   className="rounded"
                 />
                 <Label htmlFor="admin" className="cursor-pointer">
-                  เข้าสู่ระบบในฐานะผู้ดูแลระบบ
+                  ลงทะเบียนในฐานะผู้ดูแลระบบ
                 </Label>
               </div>
 
               <Button type="submit" className="w-full">
-                เข้าสู่ระบบ
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={onRegister}
-              >
                 ลงทะเบียน
               </Button>
             </form>
+
+            <div className="mt-4 text-center text-sm text-gray-600">
+              <p>มีบัญชีอยู่แล้ว? <span className="text-green-600 cursor-pointer" onClick={onBack}>เข้าสู่ระบบ</span></p>
+            </div>
           </CardContent>
         </Card>
       </div>

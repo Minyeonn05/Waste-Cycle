@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Header } from './component/common/Header.jsx';
 import { LandingPage } from './pages/LandingPage.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
+import { RegisterPage } from "./pages/RegisterPage.jsx";
 import { Dashboard } from './pages/Dashboard.jsx';
 import { Marketplace } from './pages/Marketplace.jsx';
 import { CreatePost } from './component/CreatePost.jsx';
@@ -13,17 +14,14 @@ import { CircularView } from './component/CircularView.jsx';
 import { AdminPanel } from './pages/AdminPanel.jsx';
 import { ChatDialog } from './component/ChatDialog.jsx';
 
-
-
 export default function App() {
   const [currentPage, setCurrentPage] = useState('landing');
   const [user, setUser] = useState(null);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [chatPostId, setChatPostId] = useState(null);
-  const [chatRoomId, setChatRoomId] = useState(null);
-  
-  // Posts state - includes all posts from all users
+
+  // 🔹 เก็บโพสต์ mock
   const [posts, setPosts] = useState([
     {
       id: '1',
@@ -93,17 +91,30 @@ export default function App() {
     },
   ]);
 
+  // -----------------------------
+  // 🔐 การจัดการผู้ใช้
+  // -----------------------------
   const handleLogin = (userData) => {
     setUser(userData);
     setCurrentPage('dashboard');
+    alert("เข้าสู่ระบบสำเร็จ: " + userData.name);
+  };
+
+  const handleRegister = (userData) => {
+    console.log("ลงทะเบียนสำเร็จ", userData);
+    alert("ลงทะเบียนสำเร็จ! โปรดเข้าสู่ระบบ");
+    setCurrentPage('login'); // ✅ แก้จาก navigate("/login")
   };
 
   const handleLogout = () => {
     setUser(null);
     setCurrentPage('landing');
-    setPosts(posts.filter(p => p.userId !== user.id)); // Keep other users' posts
+    setPosts(posts.filter(p => p.userId !== user?.id)); // ลบโพสต์ของผู้ใช้คนนั้น
   };
 
+  // -----------------------------
+  // 🔄 ฟังก์ชันนำทาง
+  // -----------------------------
   const navigateTo = (page) => {
     setCurrentPage(page);
     setSelectedPostId(null);
@@ -121,6 +132,9 @@ export default function App() {
     setCurrentPage('create-post');
   };
 
+  // -----------------------------
+  // 🧱 การจัดการโพสต์
+  // -----------------------------
   const handleCreatePost = (newPost) => {
     const post = {
       ...newPost,
@@ -145,29 +159,48 @@ export default function App() {
     navigateTo('marketplace');
   };
 
-  const handleOpenChat = (postId) => {
-    setChatPostId(postId);
-  };
+  // -----------------------------
+  // 💬 แชท
+  // -----------------------------
+  const handleOpenChat = (postId) => setChatPostId(postId);
+  const handleCloseChat = () => setChatPostId(null);
 
-  const handleCloseChat = () => {
-    setChatPostId(null);
-  };
-
+  // -----------------------------
+  // 🌱 Navigation Logic
+  // -----------------------------
   if (!user && currentPage === 'landing') {
     return <LandingPage onGetStarted={() => setCurrentPage('login')} />;
   }
 
   if (!user && currentPage === 'login') {
-    return <LoginPage onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />;
+    return (
+      <LoginPage
+        onLogin={handleLogin}
+        onBack={() => setCurrentPage('landing')}
+        onRegister={() => setCurrentPage('register')}
+      />
+    );
   }
 
+  if (!user && currentPage === 'register') {
+    return (
+      <RegisterPage
+        onRegister={handleRegister}
+        onBack={() => setCurrentPage('login')}
+      />
+    );
+  }
+
+  // -----------------------------
+  // 🧭 หลังล็อกอิน
+  // -----------------------------
   const currentPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
   const chatPost = chatPostId ? posts.find(p => p.id === chatPostId) : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header user={user} onLogout={handleLogout} onNavigate={navigateTo} currentPage={currentPage} />
-      
+
       <main className="pt-16">
         {currentPage === 'dashboard' && (
           <Dashboard 
@@ -180,6 +213,7 @@ export default function App() {
             onChat={handleOpenChat}
           />
         )}
+
         {currentPage === 'marketplace' && user.role !== 'admin' && (
           <Marketplace 
             user={user} 
@@ -190,6 +224,7 @@ export default function App() {
             onChat={handleOpenChat}
           />
         )}
+
         {currentPage === 'create-post' && user.role !== 'admin' && (
           <CreatePost 
             user={user} 
@@ -199,6 +234,7 @@ export default function App() {
             editingPost={isEditingPost && currentPost ? currentPost : undefined}
           />
         )}
+
         {currentPage === 'post-detail' && currentPost && (
           <PostDetail
             post={currentPost}
@@ -209,6 +245,7 @@ export default function App() {
             onChat={() => handleOpenChat(currentPost.id)}
           />
         )}
+
         {currentPage === 'bookings' && user.role !== 'admin' && <BookingPage user={user} />}
         {currentPage === 'fertilizer-advisor' && user.role !== 'admin' && <FertilizerAdvisor user={user} />}
         {currentPage === 'npk-calculator' && user.role !== 'admin' && <NPKCalculator user={user} />}
@@ -216,7 +253,6 @@ export default function App() {
         {currentPage === 'admin' && user.role === 'admin' && <AdminPanel />}
       </main>
 
-      {/* Chat Dialog */}
       {chatPost && (
         <ChatDialog 
           post={chatPost}

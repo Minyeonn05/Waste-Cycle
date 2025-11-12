@@ -6,11 +6,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { ArrowLeft, Recycle } from 'lucide-react';
 
-// 1. 👈 Import auth และ signIn
-import { auth } from '../firebaseClientConfig'; // (จากไฟล์ที่เราเพิ่งสร้าง)
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-
-export function LoginPage({ onLogin, onBack }) {
+export function LoginPage({ onLogin, onBack, onRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -18,7 +14,16 @@ export function LoginPage({ onLogin, onBack }) {
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    setError(null);
+
+    const mockUser = {
+      id: '1',
+      email,
+      name: email.split('@')[0],
+      role: isAdmin ? 'admin' : 'user',
+      farmName: 'ฟาร์มของฉัน',
+      location: { lat: 13.7563, lng: 100.5018 },
+      verified: true
+    };
 
     try {
       let userCredential;
@@ -62,30 +67,50 @@ export function LoginPage({ onLogin, onBack }) {
               {isRegister ? 'สร้างบัญชีเพื่อเริ่มใช้งาน' : 'เข้าสู่ระบบเพื่อซื้อและขายของเสีย'}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             {/* 5. 👈 เปลี่ยน onSubmit */}
             <form onSubmit={handleAuth} className="space-y-4">
               {/* ... (Input Email, Password) ... */}
 
-              {/* 6. 👈 แสดง Error ถ้ามี */}
-              {error && (
-                <p className="text-sm text-red-600">{error}</p>
-              )}
-              
-              {/* (ลบ Checkbox "ผู้ดูแลระบบ" ออก) */}
+              <div className="space-y-2">
+                <Label htmlFor="password">รหัสผ่าน</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="admin"
+                  checked={isAdmin}
+                  onChange={(e) => setIsAdmin(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="admin" className="cursor-pointer">
+                  เข้าสู่ระบบในฐานะผู้ดูแลระบบ
+                </Label>
+              </div>
 
               <Button type="submit" className="w-full">
                 {isRegister ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}
               </Button>
-            </form>
 
-            {/* 7. 👈 เพิ่มปุ่มสลับโหมด */}
-            <div className="mt-4 text-center text-sm">
-              <Button variant="link" onClick={() => setIsRegister(!isRegister)}>
-                {isRegister ? 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ' : 'ยังไม่มีบัญชี? สมัครสมาชิก'}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={onRegister}
+              >
+                ลงทะเบียน
               </Button>
-            </div>
+            </form>
           </CardContent>
         </Card>
       </div>

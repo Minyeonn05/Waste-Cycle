@@ -8,7 +8,10 @@ const MATERIAL_NPK = {
   'chicken_manure': { N: 3.5, P: 2.5, K: 1.5, name: 'มูลไก่' },
   'cow_manure': { N: 2.0, P: 1.0, K: 2.0, name: 'มูลวัว' },
   'pig_manure': { N: 3.0, P: 2.0, K: 1.5, name: 'มูลหมู' },
-
+  'compost': { N: 1.5, P: 1.0, K: 1.0, name: 'ปุ๋ยหมัก' },
+  'rice_straw': { N: 0.6, P: 0.2, K: 1.2, name: 'ฟางข้าว' },
+  'corn_stalk': { N: 0.7, P: 0.3, K: 1.0, name: 'ต้นข้าวโพด' },
+  'vegetable_waste': { N: 2.0, P: 0.8, K: 1.5, name: 'เศษผัก' }
 };
 
 /**

@@ -9,7 +9,6 @@ import {
   searchProducts
 } from '../controllers/productController.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
-import { requireSeller } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
@@ -18,8 +17,8 @@ router.get('/', getAllProducts);
 router.get('/search', searchProducts);
 router.get('/:id', getProductById);
 
-// Protected routes (seller only for create)
-router.post('/', verifyToken, requireSeller, createProduct);
+// Protected routes (ต้อง login)
+router.post('/', verifyToken, createProduct);
 router.put('/:id', verifyToken, updateProduct);
 router.delete('/:id', verifyToken, deleteProduct);
 

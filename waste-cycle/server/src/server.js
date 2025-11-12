@@ -9,7 +9,6 @@ import productRoutes from './routes/productRoutes.js';
 import matchingRoutes from './routes/matchingRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import fertilizerRoutes from './routes/fertilizerRoutes.js';
-import chatRoutes from './routes/chatRoutes.js';
 import { rateLimitMiddleware } from './middleware/rateLimitMiddleware.js';
 
 dotenv.config();

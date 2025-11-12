@@ -133,12 +133,15 @@ export const createBooking = async (req, res) => {
 export const getUserBookings = async (req, res) => {
   try {
     const { userId } = req.params;
+    const currentUserId = req.user.uid;
+    const userRole = req.user.role || 'user';
     
-    // ตรวจสอบว่าเป็นเจ้าของหรือไม่
-    if (userId !== req.user.uid) {
+    // ตรวจสอบว่าเป็นเจ้าของหรือ admin
+    if (userId !== currentUserId && userRole !== 'admin') {
       return res.status(403).json({
         success: false,
-        error: 'Unauthorized access'
+        error: 'Unauthorized access',
+        message: 'You can only view your own bookings'
       });
     }
     
@@ -202,6 +205,7 @@ export const updateBookingStatus = async (req, res) => {
     }
     
     const userId = req.user.uid;
+    const userRole = req.user.role || 'user';
     const bookingRef = bookingsCollection.doc(id);
     
     // ใช้ Transaction
@@ -216,19 +220,21 @@ export const updateBookingStatus = async (req, res) => {
         const bookingData = bookingDoc.data();
         
         // ตรวจสอบสิทธิ์
-        // seller สามารถ confirm, buyer และ seller สามารถ cancel
-        if (status === 'confirmed' && bookingData.sellerId !== userId) {
-          throw new Error('Only seller can confirm booking');
-        }
-        
-        if (status === 'completed' && bookingData.sellerId !== userId) {
-          throw new Error('Only seller can mark as completed');
-        }
-        
-        if (status === 'cancelled' && 
-            bookingData.buyerId !== userId && 
-            bookingData.sellerId !== userId) {
-          throw new Error('Unauthorized to cancel this booking');
+        // Admin สามารถทำอะไรก็ได้
+        if (userRole !== 'admin') {
+          // seller สามารถ confirm และ complete
+          if (status === 'confirmed' || status === 'completed') {
+            if (bookingData.sellerId !== userId) {
+              throw new Error('Only seller can confirm or complete booking');
+            }
+          }
+          
+          // buyer และ seller สามารถ cancel
+          if (status === 'cancelled') {
+            if (bookingData.buyerId !== userId && bookingData.sellerId !== userId) {
+              throw new Error('Only buyer or seller can cancel booking');
+            }
+          }
         }
         
         // อัพเดตสถานะการจอง
@@ -288,6 +294,46 @@ export const updateBookingStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update booking status'
+    });
+  }
+};
+
+/**
+ * ⭐ ดึงการจองทั้งหมด (Admin เท่านั้น)
+ * GET /api/bookings
+ */
+export const getAllBookings = async (req, res) => {
+  try {
+    const { limit = 50, status } = req.query;
+    
+    let query = bookingsCollection.orderBy('createdAt', 'desc');
+    
+    if (status) {
+      query = query.where('status', '==', status);
+    }
+    
+    query = query.limit(parseInt(limit));
+    
+    const snapshot = await query.get();
+    const bookings = [];
+    
+    snapshot.forEach(doc => {
+      bookings.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    res.json({
+      success: true,
+      count: bookings.length,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Get all bookings error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch bookings'
     });
   }
 };

@@ -21,6 +21,7 @@ export default function App() {
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [chatPostId, setChatPostId] = useState(null);
+  const [chatRoomId, setChatRoomId] = useState(null);
   
   // Posts state - includes all posts from all users
   const [posts, setPosts] = useState([

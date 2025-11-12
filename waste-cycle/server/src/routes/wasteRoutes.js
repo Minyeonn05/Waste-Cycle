@@ -1,7 +1,7 @@
 // server/src/routes/wasteRoutes.js
 import express from 'express';
 
-// 🚨 1. แก้ไขชื่อ import ให้ตรงกับ productController.js 🚨
+// 🚨 1. แก้ไขชื่อ import ให้ตรงกับ productController.js
 import { 
   getAllProducts, 
   getProductById, 
@@ -9,14 +9,13 @@ import {
   updateProduct, 
   deleteProduct,
   searchProducts
-} from '../controllers/productController.js'; 
-// (เปลี่ยนจาก getAllWastes -> getAllProducts, createWaste -> createProduct, ฯลฯ)
+} from '../controllers/productController.js'; // 👈 แก้จาก wasteController.js
 
 import { verifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// 🚨 2. แก้ไขชื่อฟังก์ชันที่เรียกใช้ให้ตรงกัน 🚨
+// 🚨 2. แก้ไขชื่อฟังก์ชันที่เรียกใช้ให้ตรงกัน
 // Public routes
 router.get('/', getAllProducts);
 router.get('/search', searchProducts);

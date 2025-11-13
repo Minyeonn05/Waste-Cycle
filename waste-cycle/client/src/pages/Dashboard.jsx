@@ -292,7 +292,74 @@ function AdminDashboard({ onNavigate }) {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl mb-6">แดชบอร์ดผู้ดูแลระบบ</h1>
-      {/* ... (โค้ด AdminDashboard เหมือนเดิม) ... */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">ผู้ใช้ทั้งหมด</p>
+                <p className="text-2xl">248</p>
+              </div>
+              <Users className="w-8 h-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">โพสต์ทั้งหมด</p>
+                <p className="text-2xl">342</p>
+              </div>
+              <Package className="w-8 h-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">ธุรกรรม</p>
+                <p className="text-2xl">156</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">รอยืนยัน</p>
+                <p className="text-2xl">7</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>การดำเนินการด่วน</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button onClick={() => onNavigate('admin')} className="h-auto py-4">
+              จัดการผู้ใช้
+            </Button>
+            <Button onClick={() => onNavigate('marketplace')} variant="outline" className="h-auto py-4">
+              จัดการโพสต์
+            </Button>
+            <Button onClick={() => onNavigate('circular-view')} variant="outline" className="h-auto py-4">
+              ดูสถิติรวม
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

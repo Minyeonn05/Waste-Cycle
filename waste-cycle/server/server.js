@@ -5,7 +5,20 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+<<<<<<< Updated upstream
 import errorHandler from './src/middleware/errorMiddleware.js';
+=======
+import dotenv from 'dotenv';
+import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import farmRoutes from './routes/farmRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import matchingRoutes from './routes/matchingRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
+import fertilizerRoutes from './routes/fertilizerRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
+import { rateLimitMiddleware } from './middleware/rateLimitMiddleware.js';
+>>>>>>> Stashed changes
 
 // Import Routes
 import wasteRoutes from './src/routes/wasteRoutes.js';

@@ -171,7 +171,6 @@ export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.uid;
-    const userRole = req.user.role || 'user';
     
     const doc = await productsCollection.doc(id).get();
     
@@ -182,12 +181,10 @@ export const updateProduct = async (req, res) => {
       });
     }
     
-    // ตรวจสอบว่าเป็นเจ้าของหรือ admin
-    if (doc.data().userId !== userId && userRole !== 'admin') {
+    if (doc.data().userId !== userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        error: 'Unauthorized to update this product',
-        message: 'Only the owner or admin can update this product'
+        error: 'Unauthorized to update this product'
       });
     }
     
@@ -196,7 +193,6 @@ export const updateProduct = async (req, res) => {
       updatedAt: new Date().toISOString()
     };
     
-    // ลบฟิลด์ที่ไม่ควรแก้ไข
     delete updateData.userId;
     delete updateData.seller;
     delete updateData.createdAt;
@@ -228,7 +224,6 @@ export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.uid;
-    const userRole = req.user.role || 'user';
     
     const doc = await productsCollection.doc(id).get();
     
@@ -239,12 +234,10 @@ export const deleteProduct = async (req, res) => {
       });
     }
     
-    // ตรวจสอบว่าเป็นเจ้าของหรือ admin
-    if (doc.data().userId !== userId && userRole !== 'admin') {
+    if (doc.data().userId !== userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        error: 'Unauthorized to delete this product',
-        message: 'Only the owner or admin can delete this product'
+        error: 'Unauthorized to delete this product'
       });
     }
     

@@ -24,21 +24,21 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
-
-  // ฟังก์ชันเลื่อนลงล่างสุด
+  
+// ฟังก์ชันเลื่อนลงล่างสุด
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // 3. 👈 [หัวใจ Realtime] ใช้ useEffect + onSnapshot เพื่อ "ดักฟัง"
+  // 2. 👈 [หัวใจ] Effect นี้จะ "ดักฟัง" ข้อความใหม่จาก Firestore
   useEffect(() => {
-    if (!roomId) return; // ถ้ายังไม่มี roomId (เช่น App.jsx ยังโหลดไม่เสร็จ) ก็ไม่ต้องทำอะไร
+    if (!roomId) return; // ถ้ายังไม่มี roomId ก็ไม่ต้องทำอะไร
 
     setLoading(true);
-    
+
     // สร้าง query ไปยัง sub-collection 'messages' ภายในห้องแชต
     const messagesCol = collection(db, 'chat_rooms', roomId, 'messages');
-    const q = query(messagesCol, orderBy('timestamp', 'asc')); // เรียงตามเวลา
+    const q = query(messagesCol, orderBy('timestamp', 'asc'));
 
     // onSnapshot คือการเชื่อมต่อแบบ Real-time
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -53,15 +53,13 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
       setLoading(false);
     });
 
-    // 4. 👈 คืนค่าฟังก์ชัน unsubscribe เมื่อ component ถูกปิด (สำคัญมาก!)
-    return () => unsubscribe();
+    return () => unsubscribe(); // Cleanup listener
 
-  }, [roomId]); // 👈 ให้ Effect นี้ทำงานใหม่ทุกครั้งที่ roomId (ห้องแชต) เปลี่ยน
-
-  // เลื่อนลงล่างสุดเมื่อมีข้อความใหม่
+  }, [roomId]); // ทำงานใหม่เมื่อ roomId เปลี่ยน
+// เลื่อนลงล่างสุดเมื่อมีข้อความใหม่
   useEffect(scrollToBottom, [messages]);
 
-  // 5. 👈 [หัวใจการส่ง] ฟังก์ชันส่งข้อความ (Write)
+  // 3. 👈 [หัวใจ] ฟังก์ชันส่งข้อความ
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUser) return;
 
@@ -90,7 +88,7 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
     }
   };
 
-  // 6. 👈 [UI] ผมแก้ไข UI เล็กน้อยให้เป็น Dialog ลอย (Modal)
+ // 6. 👈 [UI] ผมแก้ไข UI เล็กน้อยให้เป็น Dialog ลอย (Modal)
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl max-h-[600px] flex flex-col">
@@ -113,7 +111,7 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
             <p className="text-center text-gray-500">เริ่มการสนทนา</p>
           )}
 
-          {/* 7. 👈 [UI] แสดงผลข้อความจริง */}
+          {/* 4. 👈 แสดงผลข้อความจริง */}
           {messages.map((message) => {
             const isMe = message.senderId === currentUser.id;
             return (
@@ -134,7 +132,7 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
                       isMe ? 'text-green-100' : 'text-gray-500'
                     }`}
                   >
-                    {/* 8. 👈 [UI] แปลง Timestamp ของ Firebase */}
+                    {/* 5. 👈 แปลง Timestamp ของ Firebase */}
                     {message.timestamp?.toDate ?
                       message.timestamp.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) :
                       '...'

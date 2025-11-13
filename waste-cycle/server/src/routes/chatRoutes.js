@@ -16,9 +16,12 @@ import { requireAdmin } from '../middleware/roleMiddleware.js';
 const router = express.Router();
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // เราจะใช้ verifyToken เพื่อให้รู้ว่าใครคือ "ผู้ซื้อ" ที่กดแชต
 router.post('/initiate', verifyToken, initiateChat);
 =======
+=======
+>>>>>>> Stashed changes
 // User routes (ต้อง login)
 router.post('/', verifyToken, createOrGetChatRoom);
 router.get('/', verifyToken, getUserChats);
@@ -30,6 +33,9 @@ router.delete('/:chatId', verifyToken, deleteChat);
 
 // Admin routes
 router.get('/admin/all', verifyToken, requireAdmin, getAllChats);
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 export default router;

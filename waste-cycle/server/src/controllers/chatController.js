@@ -2,6 +2,7 @@
 import { db } from '../config/firebaseConfig.js';
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 const chatRoomsCollection = db.collection('chat_rooms');
 const wastesCollection = db.collection('wastes');
 
@@ -85,6 +86,29 @@ export const createOrGetChatRoom = async (req, res) => {
       });
     }
 
+=======
+const chatsCollection = db.collection('chats');
+const messagesCollection = db.collection('messages');
+const usersCollection = db.collection('users');
+
+/**
+ * สร้างหรือดึง chat room
+ * POST /api/chats
+ */
+export const createOrGetChatRoom = async (req, res) => {
+  try {
+    const { productId, sellerId } = req.body;
+    const buyerId = req.user.uid;
+
+    // Validation
+    if (!productId || !sellerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product ID and Seller ID are required'
+      });
+    }
+
+>>>>>>> Stashed changes
     // ห้ามแชทกับตัวเอง
     if (buyerId === sellerId) {
       return res.status(400).json({
@@ -171,6 +195,9 @@ export const createOrGetChatRoom = async (req, res) => {
     await chatsCollection.doc(chatId).set(chatData);
 
     res.status(201).json({
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       success: true,
       message: 'Chat room created',
@@ -229,11 +256,14 @@ export const getUserChats = async (req, res) => {
     });
   } catch (error) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     console.error('Initiate chat error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to initiate chat session'
 =======
+=======
+>>>>>>> Stashed changes
     console.error('Get user chats error:', error);
     res.status(500).json({
       success: false,
@@ -593,6 +623,9 @@ export const getAllChats = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch chats'
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     });
   }

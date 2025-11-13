@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Users, FileText, CheckCircle, XCircle, AlertTriangle, Search } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './component/ui/card.jsx';
-import { Button } from './component/ui/button.jsx';
-import { Input } from './component/ui/input.jsx';
-import { Badge } from './component/ui/badge.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs.jsx';
+// 💡 FIX: แก้ไข Path จาก './' เป็น '../'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card.jsx';
+import { Button } from '../component/ui/button.jsx';
+import { Input } from '../component/ui/input.jsx';
+import { Badge } from '../component/ui/badge.jsx';
+// 💡 FIX: แก้ไข Path ให้ถูกต้อง
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../component/ui/tabs.jsx';
 import {
   Table,
   TableBody,
@@ -12,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from './ui/table.jsx';
+} from '../component/ui/table.jsx';
 
 
 

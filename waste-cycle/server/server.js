@@ -1,16 +1,17 @@
-// server/src/server.js
+// server/server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import authRoutes from './routes/authRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import farmRoutes from './routes/farmRoutes.js';
-import productRoutes from './routes/productRoutes.js';
-import matchingRoutes from './routes/matchingRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js';
-import fertilizerRoutes from './routes/fertilizerRoutes.js';
-import chatRoutes from './routes/chatRoutes.js'; // 💬 เพิ่มบรรทัดนี้
-import { rateLimitMiddleware } from './middleware/rateLimitMiddleware.js';
+// 💡 FIX: แก้ไข Path ให้ชี้ไปที่โฟลเดอร์ src ทั้งหมด
+import authRoutes from './src/routes/authRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
+import farmRoutes from './src/routes/farmRoutes.js';
+import productRoutes from './src/routes/productRoutes.js';
+import matchingRoutes from './src/routes/matchingRoutes.js';
+import bookingRoutes from './src/routes/bookingRoutes.js';
+import fertilizerRoutes from './src/routes/fertilizerRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js'; 
+import { rateLimitMiddleware } from './src/middleware/rateLimitMiddleware.js';
 
 dotenv.config();
 
@@ -49,7 +50,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/advisor', fertilizerRoutes);
-app.use('/api/chats', chatRoutes); // 💬 เพิ่มบรรทัดนี้
+app.use('/api/chats', chatRoutes); 
 
 // 404 handler
 app.use((req, res) => {

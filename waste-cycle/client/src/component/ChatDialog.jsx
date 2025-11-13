@@ -5,9 +5,9 @@ import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card.jsx';
 
-// 1. 👈 IMPORT DB จากที่เราสร้างไว้
-import { db } from '../firebaseClientConfig.js'; 
+// 1. 👈 [Import] สิ่งที่ต้องใช้จาก Firebase
 import { 
+  getFirestore, 
   collection, 
   addDoc, 
   serverTimestamp, 
@@ -16,6 +16,8 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 
+// 2. 👈 [Import] db จากไฟล์ Config ที่คุณมี
+import { db } from '../firebaseClientConfig.js'; 
 
 export function ChatDialog({ roomId, post, currentUser, onClose }) {
   const [messages, setMessages] = useState([]);
@@ -23,18 +25,20 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
+  // ฟังก์ชันเลื่อนลงล่างสุด
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // 2. 👈 [หัวใจ] Effect นี้จะ "ดักฟัง" ข้อความใหม่จาก Firestore
+  // 3. 👈 [หัวใจ Realtime] ใช้ useEffect + onSnapshot เพื่อ "ดักฟัง"
   useEffect(() => {
-    if (!roomId) return; // ถ้ายังไม่มี roomId ก็ไม่ต้องทำอะไร
+    if (!roomId) return; // ถ้ายังไม่มี roomId (เช่น App.jsx ยังโหลดไม่เสร็จ) ก็ไม่ต้องทำอะไร
 
     setLoading(true);
+    
     // สร้าง query ไปยัง sub-collection 'messages' ภายในห้องแชต
     const messagesCol = collection(db, 'chat_rooms', roomId, 'messages');
-    const q = query(messagesCol, orderBy('timestamp', 'asc'));
+    const q = query(messagesCol, orderBy('timestamp', 'asc')); // เรียงตามเวลา
 
     // onSnapshot คือการเชื่อมต่อแบบ Real-time
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -49,19 +53,23 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
       setLoading(false);
     });
 
-    return () => unsubscribe(); // Cleanup listener
+    // 4. 👈 คืนค่าฟังก์ชัน unsubscribe เมื่อ component ถูกปิด (สำคัญมาก!)
+    return () => unsubscribe();
 
-  }, [roomId]); // ทำงานใหม่เมื่อ roomId เปลี่ยน
+  }, [roomId]); // 👈 ให้ Effect นี้ทำงานใหม่ทุกครั้งที่ roomId (ห้องแชต) เปลี่ยน
 
+  // เลื่อนลงล่างสุดเมื่อมีข้อความใหม่
   useEffect(scrollToBottom, [messages]);
 
-  // 3. 👈 [หัวใจ] ฟังก์ชันส่งข้อความ
+  // 5. 👈 [หัวใจการส่ง] ฟังก์ชันส่งข้อความ (Write)
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUser) return;
 
     try {
+      // สร้าง query ไปยัง sub-collection 'messages'
       const messagesCol = collection(db, 'chat_rooms', roomId, 'messages');
       
+      // เพิ่มเอกสารใหม่ (ข้อความใหม่)
       await addDoc(messagesCol, {
         text: newMessage,
         senderId: currentUser.id,
@@ -82,6 +90,7 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
     }
   };
 
+  // 6. 👈 [UI] ผมแก้ไข UI เล็กน้อยให้เป็น Dialog ลอย (Modal)
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl max-h-[600px] flex flex-col">
@@ -104,7 +113,7 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
             <p className="text-center text-gray-500">เริ่มการสนทนา</p>
           )}
 
-          {/* 4. 👈 แสดงผลข้อความจริง */}
+          {/* 7. 👈 [UI] แสดงผลข้อความจริง */}
           {messages.map((message) => {
             const isMe = message.senderId === currentUser.id;
             return (
@@ -125,7 +134,7 @@ export function ChatDialog({ roomId, post, currentUser, onClose }) {
                       isMe ? 'text-green-100' : 'text-gray-500'
                     }`}
                   >
-                    {/* 5. 👈 แปลง Timestamp ของ Firebase */}
+                    {/* 8. 👈 [UI] แปลง Timestamp ของ Firebase */}
                     {message.timestamp?.toDate ?
                       message.timestamp.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) :
                       '...'

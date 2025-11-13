@@ -9,7 +9,7 @@ import {
   updateProduct, 
   deleteProduct,
   searchProducts
-} from '../controllers/productController.js'; // 👈 แก้จาก wasteController.js
+} from '../controllers/productController.js'; 
 
 import { verifyToken } from '../middleware/authMiddleware.js';
 

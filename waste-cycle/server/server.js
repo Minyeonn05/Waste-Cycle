@@ -1,40 +1,25 @@
-// server/src/server.js
+// server/server.js
 import dotenv from 'dotenv';
 // 🚨 1. รัน dotenv.config() เป็นอย่างแรกสุด! 🚨
 dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-<<<<<<< Updated upstream
-import errorHandler from './src/middleware/errorMiddleware.js';
-=======
-import dotenv from 'dotenv';
-import authRoutes from './routes/authRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import farmRoutes from './routes/farmRoutes.js';
-import productRoutes from './routes/productRoutes.js';
-import matchingRoutes from './routes/matchingRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js';
-import fertilizerRoutes from './routes/fertilizerRoutes.js';
-import chatRoutes from './routes/chatRoutes.js';
-import { rateLimitMiddleware } from './middleware/rateLimitMiddleware.js';
->>>>>>> Stashed changes
+// 🚨 2. แก้ไข Path ให้ถูกต้อง 🚨
+import errorHandler from './src/middleware/errorMiddleware.js'; 
 
 // Import Routes
-import wasteRoutes from './src/routes/wasteRoutes.js';
-import communityRoutes from './src/routes/communityRoutes.js';
-import userRoutes from './src/routes/userRoutes.js';
-import authRoutes from './src/routes/authRoutes.js';
-import bookingRoutes from './src/routes/bookingRoutes.js';
-import fertilizerRoutes from './src/routes/fertilizerRoutes.js';
-import matchingRoutes from './src/routes/matchingRoutes.js';
-import farmRoutes from './src/routes/farmRoutes.js';
-import productRoutes from './src/routes/productRoutes.js';
-
-// 🚨 2. เพิ่ม import chatRoutes 🚨
-import chatRoutes from './src/routes/chatRoutes.js'; 
-
-// (ลบ dotenv.config() จากบรรทัดที่ 19 เดิม)
+// 🚨 3. แก้ไข Path ให้ถูกต้อง 🚨
+import wasteRoutes from './src/routes/wasteRoutes.js'; 
+import communityRoutes from './src/routes/communityRoutes.js'; 
+import userRoutes from './src/routes/userRoutes.js'; 
+import authRoutes from './src/routes/authRoutes.js'; 
+import bookingRoutes from './src/routes/bookingRoutes.js'; 
+import fertilizerRoutes from './src/routes/fertilizerRoutes.js'; 
+import matchingRoutes from './src/routes/matchingRoutes.js'; 
+import farmRoutes from './src/routes/farmRoutes.js'; 
+import productRoutes from './src/routes/productRoutes.js'; 
+import chatRoutes from './src/routes/chatRoutes.js'; // 👈 [เพิ่ม]
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -70,14 +55,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/fertilizer', fertilizerRoutes);
 app.use('/api/matching', matchingRoutes);
-
-// 🚨 3. แก้ไข app.push เป็น app.use ครับ 🚨 (บรรทัดที่ 51 เดิม)
-app.use('/api/farms', farmRoutes); 
-
+app.use('/api/farms', farmRoutes); // 👈 4. [แก้ไข]
 app.use('/api/products', productRoutes);
-
-// (บรรทัดที่ 53 เดิม)
-app.use('/api/chat', chatRoutes);
+app.use('/api/chat', chatRoutes); // 👈 5. [เพิ่ม]
 
 // 404 handler
 app.use((req, res) => {

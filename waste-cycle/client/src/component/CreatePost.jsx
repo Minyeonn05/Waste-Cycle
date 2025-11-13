@@ -1,3 +1,4 @@
+// client/src/component/CreatePost.jsx
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card.jsx';
@@ -71,11 +72,8 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }) {
     // Simple NPK calculation based on animal type and feed type
     const baseNPK = {
       chicken: { n: 3.2, p: 2.8, k: 1.5 },
-      duck: { n: 2.9, p: 2.5, k: 1.6 },
       cow: { n: 2.5, p: 1.8, k: 2.1 },
       pig: { n: 3.8, p: 3.2, k: 2.4 },
-      sheep: { n: 3.0, p: 2.2, k: 1.8 },
-      goat: { n: 2.8, p: 2.0, k: 1.7 },
     };
 
     return baseNPK[formData.animalType] || { n: 3.0, p: 2.5, k: 2.0 };
@@ -186,14 +184,11 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }) {
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกประเภทสัตว์" />
                   </SelectTrigger>
+                  {/* 🚨 [อัปเดต] แก้ไข Dropdown ให้เหลือ 3 อย่าง */}
                   <SelectContent>
                     <SelectItem value="chicken">ไก่</SelectItem>
-                    <SelectItem value="duck">เป็ด</SelectItem>
                     <SelectItem value="cow">โค</SelectItem>
-                    <SelectItem value="buffalo">ควาย</SelectItem>
                     <SelectItem value="pig">สุกร</SelectItem>
-                    <SelectItem value="goat">แพะ</SelectItem>
-                    <SelectItem value="sheep">แกะ</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -289,7 +284,7 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }) {
                     <SelectValue placeholder="เลือกประเภทอาหาร" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="concentrate">อาหา���ข้น (สูตรสำเร็จรูป)</SelectItem>
+                    <SelectItem value="concentrate">อาหารข้น (สูตรสำเร็จรูป)</SelectItem>
                     <SelectItem value="grass">หญ้า/ฟาง</SelectItem>
                     <SelectItem value="mixed">อาหารผสม</SelectItem>
                     <SelectItem value="organic">อาหารออร์แกนิก</SelectItem>
@@ -312,7 +307,7 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }) {
               </div>
             </div>
 
-            {formData.animalType && formData.feedType && (
+            {formData.animalType && (
               <Card className="bg-green-50 border-green-200">
                 <CardHeader>
                   <CardTitle className="text-lg">ค่า NPK โดยประมาณ</CardTitle>

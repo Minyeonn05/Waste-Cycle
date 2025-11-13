@@ -1,3 +1,4 @@
+// client/src/pages/Marketplace.jsx
 import { useState } from 'react';
 import { Search, MapPin, Filter, Star, Eye, Edit, Trash2, MessageCircle, ShoppingCart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
@@ -8,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Slider } from "../component/ui/slider";
 import { Badge } from "../component/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/ui/tabs";
-
-
 
 
 export function Marketplace({ user, posts, onViewDetail, onEdit, onDelete, onChat }) {
@@ -80,13 +79,12 @@ export function Marketplace({ user, posts, onViewDetail, onEdit, onDelete, onCha
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
+                {/* 🚨 [อัปเดต] แก้ไข Dropdown ให้เหลือ 3 อย่าง + 'all' */}
                 <SelectContent>
                   <SelectItem value="all">ทั้งหมด</SelectItem>
                   <SelectItem value="chicken">ไก่</SelectItem>
                   <SelectItem value="cow">โค</SelectItem>
                   <SelectItem value="pig">สุกร</SelectItem>
-                  <SelectItem value="duck">เป็ด</SelectItem>
-                  <SelectItem value="sheep">แกะ</SelectItem>
                 </SelectContent>
               </Select>
             </div>

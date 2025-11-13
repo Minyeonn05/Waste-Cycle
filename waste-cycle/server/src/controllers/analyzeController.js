@@ -1,7 +1,7 @@
 // server/src/controllers/analyzeController.js
 import { db } from '../config/firebaseConfig.js';
 
-// ฐานข้อมูล NPK ที่ย้ายมาจาก NPKCalculator.jsx
+// 🚨 [แก้ไข] เพิ่ม 'pig' กลับเข้ามา
 const npkDatabase = {
   chicken: [
     { animalType: 'ไก่', wasteType: 'fresh', feedType: 'concentrate', npk: { n: 3.2, p: 2.8, k: 1.5 }, organicMatter: 65, moisture: 55 },
@@ -13,15 +13,10 @@ const npkDatabase = {
     { animalType: 'โค', wasteType: 'dried', feedType: 'grass', npk: { n: 3.0, p: 2.2, k: 2.5 }, organicMatter: 70, moisture: 20 },
     { animalType: 'โค', wasteType: 'composted', feedType: 'mixed', npk: { n: 2.5, p: 1.8, k: 2.1 }, organicMatter: 58, moisture: 40 },
   ],
-  pig: [
+  pig: [ // 👈 เพิ่มส่วนนี้กลับเข้ามา
     { animalType: 'สุกร', wasteType: 'fresh', feedType: 'concentrate', npk: { n: 3.5, p: 3.0, k: 2.2 }, organicMatter: 68, moisture: 60 },
     { animalType: 'สุกร', wasteType: 'dried', feedType: 'concentrate', npk: { n: 4.8, p: 4.2, k: 3.0 }, organicMatter: 78, moisture: 18 },
     { animalType: 'สุกร', wasteType: 'composted', feedType: 'concentrate', npk: { n: 3.8, p: 3.2, k: 2.4 }, organicMatter: 62, moisture: 38 },
-  ],
-  duck: [
-    { animalType: 'เป็ด', wasteType: 'fresh', feedType: 'mixed', npk: { n: 2.8, p: 2.3, k: 1.6 }, organicMatter: 63, moisture: 58 },
-    { animalType: 'เป็ด', wasteType: 'dried', feedType: 'mixed', npk: { n: 4.0, p: 3.2, k: 2.3 }, organicMatter: 72, moisture: 17 },
-    { animalType: 'เป็ด', wasteType: 'composted', feedType: 'mixed', npk: { n: 2.9, p: 2.5, k: 1.8 }, organicMatter: 56, moisture: 36 },
   ],
 };
 
@@ -31,6 +26,7 @@ const npkDatabase = {
  * @access  Public
  */
 export const analyzeNPK = async (req, res) => {
+  // ... (โค้ดส่วนที่เหลือของฟังก์ชันนี้เหมือนเดิมครับ) ...
   try {
     const { animalType, wasteType, feedType, quantity } = req.body;
 
@@ -40,7 +36,7 @@ export const analyzeNPK = async (req, res) => {
 
     const formula = npkDatabase[animalType]?.find(
       f => f.wasteType === wasteType && f.feedType === feedType
-    ) || npkDatabase[animalType]?.[0]; // ใช้ค่า default ถ้าไม่ตรง
+    ) || npkDatabase[animalType]?.[0]; 
 
     if (!formula) {
       return res.status(404).json({ success: false, error: 'No NPK data found for this animal type' });

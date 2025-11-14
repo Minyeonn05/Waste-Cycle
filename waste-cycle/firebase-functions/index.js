@@ -1,6 +1,6 @@
 // firebase-functions/index.js
-import * as functions from "firebase-functions";
-import * as admin from "firebase-admin";
+import functions from "firebase-functions";
+import admin from "firebase-admin";     
 
 // (ถ้าใช้ V2 ให้ uncomment 2 บรรทัดล่าง และ comment V1)
 // import { onDocumentCreated } from "firebase-functions/v2/firestore";
@@ -73,19 +73,3 @@ export const sendChatNotification = functions.firestore
       return null;
     }
   });
-
-/*
-// --- (ตัวอย่างถ้าใช้ V2 Syntax) ---
-export const sendchatnotification_v2 = onDocumentCreated(
-  "/chat_rooms/{roomId}/messages/{messageId}", 
-  async (event) => {
-    const snap = event.data;
-    if (!snap) {
-      console.log("No data associated with the event");
-      return;
-    }
-    const messageData = snap.data();
-    // ... (Logic เหมือน V1) ...
-  }
-);
-*/

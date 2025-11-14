@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Calendar, Package, User, MapPin, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
-import { Button } from '../component/ui/button';
-import { Badge } from '../component/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-
-
-
-
+// Removed: import type { User as UserType } from '../App';
+// Removed: interface BookingPageProps { user: UserType; }
+// Removed: interface Booking { ... }
 
 const mockBookings = [
   {
@@ -55,7 +54,7 @@ const mockBookings = [
   },
 ];
 
-export function BookingPage({ user }) {
+export function BookingPage({ user }) { // Removed type annotation for props
   const [selectedTab, setSelectedTab] = useState('all');
 
   const filteredBookings = mockBookings.filter(booking => {
@@ -100,18 +99,18 @@ export function BookingPage({ user }) {
   );
 }
 
-function BookingCard({ booking, userRole }) {
-  const getStatusBadge = (status) => {
+function BookingCard({ booking, userRole }) { // Removed type annotation for props
+  const getStatusBadge = (status) => { // Removed type annotation for status
     const statusConfig = {
-      requested: { label: 'รอยืนยัน', variant: 'secondary' , icon: AlertCircle, color: 'text-yellow-600' },
-      accepted: { label: 'ยืนยันแล้ว', variant: 'secondary' , icon: CheckCircle, color: 'text-blue-600' },
-      confirmed: { label: 'พร้อมรับ', variant: 'secondary' , icon: CheckCircle, color: 'text-green-600' },
-      'in-transit': { label: 'กำลังจัดส่ง', variant: 'default' , icon: Clock, color: 'text-purple-600' },
-      completed: { label: 'เสร็จสิ้น', variant: 'secondary' , icon: CheckCircle, color: 'text-green-600' },
-      cancelled: { label: 'ยกเลิก', variant: 'destructive' , icon: XCircle, color: 'text-red-600' },
+      requested: { label: 'รอยืนยัน', variant: 'secondary', icon: AlertCircle, color: 'text-yellow-600' },
+      accepted: { label: 'ยืนยันแล้ว', variant: 'secondary', icon: CheckCircle, color: 'text-blue-600' },
+      confirmed: { label: 'พร้อมรับ', variant: 'secondary', icon: CheckCircle, color: 'text-green-600' },
+      'in-transit': { label: 'กำลังจัดส่ง', variant: 'default', icon: Clock, color: 'text-purple-600' },
+      completed: { label: 'เสร็จสิ้น', variant: 'secondary', icon: CheckCircle, color: 'text-green-600' },
+      cancelled: { label: 'ยกเลิก', variant: 'destructive', icon: XCircle, color: 'text-red-600' },
     };
 
-    const config = statusConfig[status];
+    const config = statusConfig[status]; // Removed type assertion
     const Icon = config.icon;
 
     return (

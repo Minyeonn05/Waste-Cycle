@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Users, FileText, CheckCircle, XCircle, AlertTriangle, Search } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card.jsx';
-import { Button } from "../component/ui/button";
-import { Input } from "../component/ui/input";
-import { Badge } from "../component/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
   Table,
   TableBody,
@@ -12,9 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../component/ui/table";
-
-
+} from './ui/table';
 
 const mockUsers = [
   { id: '1', name: 'สมชาย', email: 'somchai@farm.com', role: 'user', farmName: 'ฟาร์มไก่ไข่ภูเก็ต', verified: true, postsCount: 12, joinedDate: '2024-08-15' },
@@ -36,7 +34,7 @@ export function AdminPanel() {
   const filteredUsers = mockUsers.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.farmName.toLowerCase().includes(searchTerm.toLowerCase())
+    user.farmName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

@@ -1,8 +1,10 @@
 import { Recycle, ArrowRight, Sprout, Beef, TrendingUp, Globe } from 'lucide-react';
-import { Button } from '../component/ui/button';
-import { ImageWithFallback } from "../component/figma/ImageWithFallback";
+import { Button } from './ui/button';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 
-export function LandingPage({ onGetStarted }) {
+// Removed: interface LandingPageProps { ... }
+
+export function LandingPage({ onGetStarted }) { // Removed type annotation for props
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       {/* Hero Section */}
@@ -83,7 +85,7 @@ export function LandingPage({ onGetStarted }) {
   );
 }
 
-function FeatureCard({ icon, title, description }) {
+function FeatureCard({ icon, title, description }) { // Removed type annotation for props
   return (
     <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
       <div className="mb-4">{icon}</div>
@@ -93,7 +95,7 @@ function FeatureCard({ icon, title, description }) {
   );
 }
 
-function StatCard({ value, label }) {
+function StatCard({ value, label }) { // Removed type annotation for props
   return (
     <div>
       <div className="text-4xl text-green-600 mb-2">{value}</div>
@@ -102,7 +104,7 @@ function StatCard({ value, label }) {
   );
 }
 
-function ProcessStep({ number, text }) {
+function ProcessStep({ number, text }) { // Removed type annotation for props
   return (
     <div className="flex flex-col items-center">
       <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center text-2xl mb-3">

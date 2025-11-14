@@ -1,13 +1,12 @@
 import { ArrowLeft, MapPin, Calendar, Package, DollarSign, Edit, Trash2, MessageCircle, ShoppingCart } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../component/ui/card';
-import { Button } from '../component/ui/button';
-import { Badge } from '../component/ui/badge';
-import { ImageWithFallback } from "../component/figma/ImageWithFallback";
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { ImageWithFallback } from './figma/ImageWithFallback';
+// Removed: import type { Post } from '../App';
+// Removed: interface PostDetailProps { ... }
 
-
-
-
-export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat }) {
+export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat }) { // Removed type annotation for props
   const handleDelete = () => {
     if (confirm('คุณต้องการลบโพสต์นี้หรือไม่?')) {
       onDelete();
@@ -26,7 +25,9 @@ export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat })
             <div>
               <CardTitle className="text-2xl mb-2">{post.title}</CardTitle>
               <div className="flex gap-2 mb-2">
-                <Badge className="bg-green-100 text-green-800">พร้อมขาย</Badge>
+                <Badge className={post.sold ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}>
+                  {post.sold ? "ขายแล้ว" : "พร้อมขาย"}
+                </Badge>
                 {post.verified && (
                   <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                     ยืนยันแล้ว
@@ -62,6 +63,12 @@ export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat })
                   />
                 </div>
               ))}
+            </div>
+          )}
+
+          {!post.images || post.images.length === 0 && (
+            <div className="w-full h-64 bg-gradient-to-br from-green-100 to-blue-100 rounded-lg flex items-center justify-center">
+              <Package className="w-16 h-16 text-gray-300" />
             </div>
           )}
 
@@ -143,7 +150,7 @@ export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat })
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={onChat}>
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  พูดคุย
+                  พูดคุin
                 </Button>
                 <Button variant="outline" className="flex-1">โทร {post.contactPhone}</Button>
                 <Button className="flex-1 bg-green-700 hover:bg-green-800">

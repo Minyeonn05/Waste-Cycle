@@ -30,17 +30,14 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
       return;
     }
 
-    if (!isAdmin && !farmName.trim()) {
-      setError('กรุณากรอกชื่อฟาร์ม');
-      return;
-    }
+    // ลบการตรวจสอบชื่อฟาร์มออก - ทำให้เป็น optional
     
     const mockUser: User = {
       id: Math.random().toString(36).substr(2, 9),
       email: email,
       name: name,
       role: isAdmin ? 'admin' : 'user',
-      farmName: isAdmin ? undefined : farmName,
+      farmName: isAdmin ? undefined : (farmName.trim() || undefined),
       verified: true,
       avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
     };
@@ -118,10 +115,9 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                   <Input
                     id="farmName"
                     type="text"
-                    placeholder="ฟาร์มของฉัน"
+                    placeholder="ฟาร์มของฉัน (ไม่บังคับ)"
                     value={farmName}
                     onChange={(e) => setFarmName(e.target.value)}
-                    required={!isAdmin}
                   />
                 </div>
               )}

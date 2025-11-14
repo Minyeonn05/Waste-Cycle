@@ -1,20 +1,20 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-alert-dialog@1.1.6";
+import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
 import { cn } from "./utils";
 import { buttonVariants } from "./button";
 
 function AlertDialog({
   ...props
-}) {
+}) { // Removed type annotation
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
 function AlertDialogTrigger({
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
   );
@@ -22,32 +22,30 @@ function AlertDialogTrigger({
 
 function AlertDialogPortal({
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
   );
 }
 
-function AlertDialogOverlay({
-  className,
-  ...props
-}) {
-  return (
-    <AlertDialogPrimitive.Overlay
-      data-slot="alert-dialog-overlay"
-      className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+const AlertDialogOverlay = React.forwardRef((
+  { className, ...props }, ref) => ( // Removed type annotation
+  <AlertDialogPrimitive.Overlay
+    ref={ref}
+    data-slot="alert-dialog-overlay"
+    className={cn(
+      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+      className,
+    )}
+    {...props}
+  />
+));
+AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
 function AlertDialogContent({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -66,7 +64,7 @@ function AlertDialogContent({
 function AlertDialogHeader({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <div
       data-slot="alert-dialog-header"
@@ -79,7 +77,7 @@ function AlertDialogHeader({
 function AlertDialogFooter({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <div
       data-slot="alert-dialog-footer"
@@ -95,7 +93,7 @@ function AlertDialogFooter({
 function AlertDialogTitle({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
@@ -108,7 +106,7 @@ function AlertDialogTitle({
 function AlertDialogDescription({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
@@ -121,7 +119,7 @@ function AlertDialogDescription({
 function AlertDialogAction({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AlertDialogPrimitive.Action
       className={cn(buttonVariants(), className)}
@@ -133,7 +131,7 @@ function AlertDialogAction({
 function AlertDialogCancel({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AlertDialogPrimitive.Cancel
       className={cn(buttonVariants({ variant: "outline" }), className)}

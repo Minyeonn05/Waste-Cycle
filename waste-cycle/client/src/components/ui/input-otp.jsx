@@ -10,7 +10,7 @@ function InputOTP({
   className,
   containerClassName,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <OTPInput
       data-slot="input-otp"
@@ -24,7 +24,7 @@ function InputOTP({
   );
 }
 
-function InputOTPGroup({ className, ...props }) {
+function InputOTPGroup({ className, ...props }) { // Removed type annotation
   return (
     <div
       data-slot="input-otp-group"
@@ -38,7 +38,7 @@ function InputOTPSlot({
   index,
   className,
   ...props
-}) {
+}) { // Removed type annotation
   const inputOTPContext = React.useContext(OTPInputContext);
   const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {};
 
@@ -62,7 +62,7 @@ function InputOTPSlot({
   );
 }
 
-function InputOTPSeparator({ ...props }) {
+function InputOTPSeparator({ ...props }) { // Removed type annotation
   return (
     <div data-slot="input-otp-separator" role="separator" {...props}>
       <MinusIcon />

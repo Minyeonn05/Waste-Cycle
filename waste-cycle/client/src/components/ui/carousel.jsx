@@ -1,9 +1,15 @@
 "use client";
 
 import * as React from "react";
-import useEmblaCarousel, {
+import useEmblaCarousel from "embla-carousel-react@8.6.0";
+import { ArrowLeft, ArrowRight } from "lucide-react@0.487.0";
 
-const CarouselContext = React.createContext(null);
+import { cn } from "./utils";
+import { Button } from "./button";
+
+// Removed type definitions: CarouselApi, UseCarouselParameters, CarouselOptions, CarouselPlugin, CarouselProps, CarouselContextProps
+
+const CarouselContext = React.createContext(null); // Removed type parameter
 
 function useCarousel() {
   const context = React.useContext(CarouselContext);
@@ -23,7 +29,7 @@ function Carousel({
   className,
   children,
   ...props
-}) {
+}) { // Removed type annotation
   const [carouselRef, api] = useEmblaCarousel(
     {
       ...opts,
@@ -34,7 +40,7 @@ function Carousel({
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
 
-  const onSelect = React.useCallback((api: CarouselApi) => {
+  const onSelect = React.useCallback((api) => { // Removed type annotation
     if (!api) return;
     setCanScrollPrev(api.canScrollPrev());
     setCanScrollNext(api.canScrollNext());
@@ -49,7 +55,7 @@ function Carousel({
   }, [api]);
 
   const handleKeyDown = React.useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
+    (event) => { // Removed type annotation
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         scrollPrev();
@@ -105,7 +111,7 @@ function Carousel({
   );
 }
 
-function CarouselContent({ className, ...props }) {
+function CarouselContent({ className, ...props }) { // Removed type annotation
   const { carouselRef, orientation } = useCarousel();
 
   return (
@@ -126,7 +132,7 @@ function CarouselContent({ className, ...props }) {
   );
 }
 
-function CarouselItem({ className, ...props }) {
+function CarouselItem({ className, ...props }) { // Removed type annotation
   const { orientation } = useCarousel();
 
   return (
@@ -149,7 +155,7 @@ function CarouselPrevious({
   variant = "outline",
   size = "icon",
   ...props
-}) {
+}) { // Removed type annotation
   const { orientation, scrollPrev, canScrollPrev } = useCarousel();
 
   return (
@@ -179,7 +185,7 @@ function CarouselNext({
   variant = "outline",
   size = "icon",
   ...props
-}) {
+}) { // Removed type annotation
   const { orientation, scrollNext, canScrollNext } = useCarousel();
 
   return (
@@ -205,3 +211,10 @@ function CarouselNext({
 }
 
 export {
+  // Removed: type CarouselApi,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+};

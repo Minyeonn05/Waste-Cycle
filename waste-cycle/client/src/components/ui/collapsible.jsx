@@ -1,16 +1,16 @@
 "use client";
 
-import * as LabelPrimitive from "@radix-ui/react-collapsible@1.1.3";
+import * as CollapsiblePrimitive from "@radix-ui/react-collapsible@1.1.3";
 
 function Collapsible({
   ...props
-}) {
+}) { // Removed type annotation
   return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
 }
 
 function CollapsibleTrigger({
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CollapsiblePrimitive.CollapsibleTrigger
       data-slot="collapsible-trigger"
@@ -21,7 +21,7 @@ function CollapsibleTrigger({
 
 function CollapsibleContent({
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CollapsiblePrimitive.CollapsibleContent
       data-slot="collapsible-content"

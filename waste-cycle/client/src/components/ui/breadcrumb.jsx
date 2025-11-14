@@ -4,11 +4,11 @@ import { ChevronRight, MoreHorizontal } from "lucide-react@0.487.0";
 
 import { cn } from "./utils";
 
-function Breadcrumb({ ...props }) {
+function Breadcrumb({ ...props }) { // Removed type annotation
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
 }
 
-function BreadcrumbList({ className, ...props }) {
+function BreadcrumbList({ className, ...props }) { // Removed type annotation
   return (
     <ol
       data-slot="breadcrumb-list"
@@ -21,7 +21,7 @@ function BreadcrumbList({ className, ...props }) {
   );
 }
 
-function BreadcrumbItem({ className, ...props }) {
+function BreadcrumbItem({ className, ...props }) { // Removed type annotation
   return (
     <li
       data-slot="breadcrumb-item"
@@ -35,7 +35,7 @@ function BreadcrumbLink({
   asChild,
   className,
   ...props
-}) {
+}) { // Removed type annotation
   const Comp = asChild ? Slot : "a";
 
   return (
@@ -47,7 +47,7 @@ function BreadcrumbLink({
   );
 }
 
-function BreadcrumbPage({ className, ...props }) {
+function BreadcrumbPage({ className, ...props }) { // Removed type annotation
   return (
     <span
       data-slot="breadcrumb-page"
@@ -64,7 +64,7 @@ function BreadcrumbSeparator({
   children,
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <li
       data-slot="breadcrumb-separator"
@@ -81,7 +81,7 @@ function BreadcrumbSeparator({
 function BreadcrumbEllipsis({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <span
       data-slot="breadcrumb-ellipsis"

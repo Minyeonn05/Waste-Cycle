@@ -8,7 +8,7 @@ import { cn } from "./utils";
 function Label({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <LabelPrimitive.Root
       data-slot="label"

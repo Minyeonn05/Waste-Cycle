@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-avatar@1.1.3";
+import * as AvatarPrimitive from "@radix-ui/react-avatar@1.1.3";
 
 import { cn } from "./utils";
 
 function Avatar({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
@@ -24,7 +24,7 @@ function Avatar({
 function AvatarImage({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
@@ -37,7 +37,7 @@ function AvatarImage({
 function AvatarFallback({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"

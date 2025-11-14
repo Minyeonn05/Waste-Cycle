@@ -8,6 +8,7 @@ import {
   FormProvider,
   useFormContext,
   useFormState,
+  // Removed type imports: type ControllerProps, type FieldPath, type FieldValues
 } from "react-hook-form@7.55.0";
 
 import { cn } from "./utils";
@@ -15,13 +16,15 @@ import { Label } from "./label";
 
 const Form = FormProvider;
 
+// Removed type definition: FormFieldContextValue
+
 const FormFieldContext = React.createContext(
-  {},
+  {}, // Removed type assertion
 );
 
-const FormField = ({
+const FormField = ({ // Removed generic type parameters
   ...props
-}) => {
+}) => { // Removed type annotation
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
       <Controller {...props} />
@@ -52,11 +55,13 @@ const useFormField = () => {
   };
 };
 
+// Removed type definition: FormItemContextValue
+
 const FormItemContext = React.createContext(
-  {},
+  {}, // Removed type assertion
 );
 
-function FormItem({ className, ...props }) {
+function FormItem({ className, ...props }) { // Removed type annotation
   const id = React.useId();
 
   return (
@@ -73,7 +78,7 @@ function FormItem({ className, ...props }) {
 function FormLabel({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   const { error, formItemId } = useFormField();
 
   return (
@@ -87,7 +92,7 @@ function FormLabel({
   );
 }
 
-function FormControl({ ...props }) {
+function FormControl({ ...props }) { // Removed type annotation
   const { error, formItemId, formDescriptionId, formMessageId } =
     useFormField();
 
@@ -106,7 +111,7 @@ function FormControl({ ...props }) {
   );
 }
 
-function FormDescription({ className, ...props }) {
+function FormDescription({ className, ...props }) { // Removed type annotation
   const { formDescriptionId } = useFormField();
 
   return (
@@ -119,7 +124,7 @@ function FormDescription({ className, ...props }) {
   );
 }
 
-function FormMessage({ className, ...props }) {
+function FormMessage({ className, ...props }) { // Removed type annotation
   const { error, formMessageId } = useFormField();
   const body = error ? String(error?.message ?? "") : props.children;
 

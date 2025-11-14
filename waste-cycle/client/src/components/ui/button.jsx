@@ -1,7 +1,6 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
-import { cva } from "class-variance-authority";
-
+import { cva } from "class-variance-authority"; // Removed type VariantProps
 
 import { cn } from "./utils";
 
@@ -41,7 +40,7 @@ function Button({
   size,
   asChild = false,
   ...props
-}) {
+}) { // Removed React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean; }
   const Comp = asChild ? Slot : "button";
 
   return (

@@ -1,38 +1,38 @@
 "use client";
 
 import * as React from "react";
-import { Drawer } from "vaul@1.1.2";
+import { Drawer as DrawerPrimitive } from "vaul@1.1.2";
 
 import { cn } from "./utils";
 
 function Drawer({
   ...props
-}) {
+}) { // Removed type annotation
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
 }
 
 function DrawerTrigger({
   ...props
-}) {
+}) { // Removed type annotation
   return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />;
 }
 
 function DrawerPortal({
   ...props
-}) {
+}) { // Removed type annotation
   return <DrawerPrimitive.Portal data-slot="drawer-portal" {...props} />;
 }
 
 function DrawerClose({
   ...props
-}) {
+}) { // Removed type annotation
   return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />;
 }
 
 function DrawerOverlay({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DrawerPrimitive.Overlay
       data-slot="drawer-overlay"
@@ -49,7 +49,7 @@ function DrawerContent({
   className,
   children,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />
@@ -72,7 +72,7 @@ function DrawerContent({
   );
 }
 
-function DrawerHeader({ className, ...props }) {
+function DrawerHeader({ className, ...props }) { // Removed type annotation
   return (
     <div
       data-slot="drawer-header"
@@ -82,7 +82,7 @@ function DrawerHeader({ className, ...props }) {
   );
 }
 
-function DrawerFooter({ className, ...props }) {
+function DrawerFooter({ className, ...props }) { // Removed type annotation
   return (
     <div
       data-slot="drawer-footer"
@@ -95,7 +95,7 @@ function DrawerFooter({ className, ...props }) {
 function DrawerTitle({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DrawerPrimitive.Title
       data-slot="drawer-title"
@@ -108,7 +108,7 @@ function DrawerTitle({
 function DrawerDescription({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DrawerPrimitive.Description
       data-slot="drawer-description"

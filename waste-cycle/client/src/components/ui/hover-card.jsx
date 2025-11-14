@@ -1,19 +1,19 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-hover-card@1.1.6";
+import * as HoverCardPrimitive from "@radix-ui/react-hover-card@1.1.6";
 
 import { cn } from "./utils";
 
 function HoverCard({
   ...props
-}) {
+}) { // Removed type annotation
   return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />;
 }
 
 function HoverCardTrigger({
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
   );
@@ -24,7 +24,7 @@ function HoverCardContent({
   align = "center",
   sideOffset = 4,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <HoverCardPrimitive.Portal data-slot="hover-card-portal">
       <HoverCardPrimitive.Content

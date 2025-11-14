@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cva } from "class-variance-authority";
+import { cva } from "class-variance-authority"; // Removed type VariantProps
 
 import { cn } from "./utils";
 
@@ -23,7 +23,7 @@ function Alert({
   className,
   variant,
   ...props
-}) {
+}) { // Removed React.ComponentProps<"div"> & VariantProps<typeof alertVariants>
   return (
     <div
       data-slot="alert"
@@ -34,7 +34,7 @@ function Alert({
   );
 }
 
-function AlertTitle({ className, ...props }) {
+function AlertTitle({ className, ...props }) { // Removed React.ComponentProps<"div">
   return (
     <div
       data-slot="alert-title"
@@ -50,7 +50,7 @@ function AlertTitle({ className, ...props }) {
 function AlertDescription({
   className,
   ...props
-}) {
+}) { // Removed React.ComponentProps<"div">
   return (
     <div
       data-slot="alert-description"

@@ -1,21 +1,21 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-accordion@1.2.3";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { ChevronDownIcon } from "lucide-react@0.487.0";
 
 import { cn } from "./utils";
 
 function Accordion({
   ...props
-}) {
+}) { // Removed type annotation
   return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
 }
 
 function AccordionItem({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
@@ -29,7 +29,7 @@ function AccordionTrigger({
   className,
   children,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
@@ -51,7 +51,7 @@ function AccordionContent({
   className,
   children,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <AccordionPrimitive.Content
       data-slot="accordion-content"

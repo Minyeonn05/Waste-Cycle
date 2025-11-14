@@ -1,39 +1,39 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-dialog@1.1.6";
+import * as DialogPrimitive from "@radix-ui/react-dialog@1.1.6";
 import { XIcon } from "lucide-react@0.487.0";
 
 import { cn } from "./utils";
 
 function Dialog({
   ...props
-}) {
+}) { // Removed type annotation
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
 function DialogTrigger({
   ...props
-}) {
+}) { // Removed type annotation
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
 function DialogPortal({
   ...props
-}) {
+}) { // Removed type annotation
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
 function DialogClose({
   ...props
-}) {
+}) { // Removed type annotation
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
 function DialogOverlay({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
@@ -50,7 +50,7 @@ function DialogContent({
   className,
   children,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -72,7 +72,7 @@ function DialogContent({
   );
 }
 
-function DialogHeader({ className, ...props }) {
+function DialogHeader({ className, ...props }) { // Removed type annotation
   return (
     <div
       data-slot="dialog-header"
@@ -82,7 +82,7 @@ function DialogHeader({ className, ...props }) {
   );
 }
 
-function DialogFooter({ className, ...props }) {
+function DialogFooter({ className, ...props }) { // Removed type annotation
   return (
     <div
       data-slot="dialog-footer"
@@ -98,7 +98,7 @@ function DialogFooter({ className, ...props }) {
 function DialogTitle({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
@@ -111,7 +111,7 @@ function DialogTitle({
 function DialogDescription({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"

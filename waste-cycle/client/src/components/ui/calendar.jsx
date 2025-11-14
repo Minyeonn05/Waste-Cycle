@@ -12,7 +12,7 @@ function Calendar({
   classNames,
   showOutsideDays = true,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -60,10 +60,10 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
+        IconLeft: ({ className, ...props }) => ( // Removed type annotation
           <ChevronLeft className={cn("size-4", className)} {...props} />
         ),
-        IconRight: ({ className, ...props }) => (
+        IconRight: ({ className, ...props }) => ( // Removed type annotation
           <ChevronRight className={cn("size-4", className)} {...props} />
         ),
       }}

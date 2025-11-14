@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Command } from "cmdk@1.1.1";
+import { Command as CommandPrimitive } from "cmdk@1.1.1";
 import { SearchIcon } from "lucide-react@0.487.0";
 
 import { cn } from "./utils";
@@ -16,7 +16,7 @@ import {
 function Command({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CommandPrimitive
       data-slot="command"
@@ -34,7 +34,7 @@ function CommandDialog({
   description = "Search for a command to run...",
   children,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
@@ -53,7 +53,7 @@ function CommandDialog({
 function CommandInput({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <div
       data-slot="command-input-wrapper"
@@ -75,7 +75,7 @@ function CommandInput({
 function CommandList({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CommandPrimitive.List
       data-slot="command-list"
@@ -90,7 +90,7 @@ function CommandList({
 
 function CommandEmpty({
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
@@ -103,7 +103,7 @@ function CommandEmpty({
 function CommandGroup({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CommandPrimitive.Group
       data-slot="command-group"
@@ -119,7 +119,7 @@ function CommandGroup({
 function CommandSeparator({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CommandPrimitive.Separator
       data-slot="command-separator"
@@ -132,7 +132,7 @@ function CommandSeparator({
 function CommandItem({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <CommandPrimitive.Item
       data-slot="command-item"
@@ -148,7 +148,7 @@ function CommandItem({
 function CommandShortcut({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <span
       data-slot="command-shortcut"

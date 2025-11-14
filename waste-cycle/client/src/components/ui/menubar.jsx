@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-menubar@1.1.6";
+import * as MenubarPrimitive from "@radix-ui/react-menubar@1.1.6";
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react@0.487.0";
 
 import { cn } from "./utils";
@@ -9,7 +9,7 @@ import { cn } from "./utils";
 function Menubar({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.Root
       data-slot="menubar"
@@ -24,25 +24,25 @@ function Menubar({
 
 function MenubarMenu({
   ...props
-}) {
+}) { // Removed type annotation
   return <MenubarPrimitive.Menu data-slot="menubar-menu" {...props} />;
 }
 
 function MenubarGroup({
   ...props
-}) {
+}) { // Removed type annotation
   return <MenubarPrimitive.Group data-slot="menubar-group" {...props} />;
 }
 
 function MenubarPortal({
   ...props
-}) {
+}) { // Removed type annotation
   return <MenubarPrimitive.Portal data-slot="menubar-portal" {...props} />;
 }
 
 function MenubarRadioGroup({
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.RadioGroup data-slot="menubar-radio-group" {...props} />
   );
@@ -51,7 +51,7 @@ function MenubarRadioGroup({
 function MenubarTrigger({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.Trigger
       data-slot="menubar-trigger"
@@ -70,7 +70,7 @@ function MenubarContent({
   alignOffset = -4,
   sideOffset = 8,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPortal>
       <MenubarPrimitive.Content
@@ -93,7 +93,7 @@ function MenubarItem({
   inset,
   variant = "default",
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.Item
       data-slot="menubar-item"
@@ -113,7 +113,7 @@ function MenubarCheckboxItem({
   children,
   checked,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.CheckboxItem
       data-slot="menubar-checkbox-item"
@@ -138,7 +138,7 @@ function MenubarRadioItem({
   className,
   children,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.RadioItem
       data-slot="menubar-radio-item"
@@ -162,7 +162,7 @@ function MenubarLabel({
   className,
   inset,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.Label
       data-slot="menubar-label"
@@ -179,7 +179,7 @@ function MenubarLabel({
 function MenubarSeparator({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.Separator
       data-slot="menubar-separator"
@@ -192,7 +192,7 @@ function MenubarSeparator({
 function MenubarShortcut({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <span
       data-slot="menubar-shortcut"
@@ -207,7 +207,7 @@ function MenubarShortcut({
 
 function MenubarSub({
   ...props
-}) {
+}) { // Removed type annotation
   return <MenubarPrimitive.Sub data-slot="menubar-sub" {...props} />;
 }
 
@@ -216,7 +216,7 @@ function MenubarSubTrigger({
   inset,
   children,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.SubTrigger
       data-slot="menubar-sub-trigger"
@@ -236,7 +236,7 @@ function MenubarSubTrigger({
 function MenubarSubContent({
   className,
   ...props
-}) {
+}) { // Removed type annotation
   return (
     <MenubarPrimitive.SubContent
       data-slot="menubar-sub-content"

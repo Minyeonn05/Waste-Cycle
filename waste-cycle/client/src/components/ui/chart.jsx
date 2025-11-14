@@ -1,24 +1,16 @@
 "use client";
 
 import * as React from "react";
-import * from "recharts@2.15.2";
+import * as RechartsPrimitive from "recharts@2.15.2";
 
 import { cn } from "./utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: "", dark: ".dark" };
+const THEMES = { light: "", dark: ".dark" }; // Removed 'as const'
 
-export type ChartConfig = {
-  [k in string]: {
-    label?: React.ReactNode;
-    icon?: React.ComponentType;
-  } & (
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
-  );
-};
+// Removed type definitions: ChartConfig, ChartContextProps
 
-const ChartContext = React.createContext(null);
+const ChartContext = React.createContext(null); // Removed type parameter
 
 function useChart() {
   const context = React.useContext(ChartContext);
@@ -36,7 +28,7 @@ function ChartContainer({
   children,
   config,
   ...props
-}) {
+}) { // Removed type annotation
   const uniqueId = React.useId();
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
 
@@ -60,7 +52,7 @@ function ChartContainer({
   );
 }
 
-const ChartStyle = ({ id, config }) => {
+const ChartStyle = ({ id, config }) => { // Removed type annotation
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme || config.color,
   );
@@ -79,9 +71,10 @@ ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
-      itemConfig.theme?.[theme typeof itemConfig.theme] ||
+      itemConfig.theme?.[theme] || // Simplified theme access
       itemConfig.color;
-    return color ? `  --color-${key})
+    return color ? `  --color-${key}: ${color};` : null;
+  })
   .join("\n")}
 }
 `,
@@ -108,7 +101,7 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}) {
+}) { // Removed type annotation
   const { config } = useChart();
 
   const tooltipLabel = React.useMemo(() => {
@@ -121,7 +114,7 @@ function ChartTooltipContent({
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
     const value =
       !labelKey && typeof label === "string"
-        ? config[label typeof config]?.label || label
+        ? config[label]?.label || label // Simplified config access
         : itemConfig?.label;
 
     if (labelFormatter) {
@@ -198,8 +191,8 @@ function ChartTooltipContent({
                           {
                             "--color-bg": indicatorColor,
                             "--color-border": indicatorColor,
-                          }.CSSProperties
-                        }
+                          }
+                        } // Removed type assertion
                       />
                     )
                   )}
@@ -239,7 +232,7 @@ function ChartLegendContent({
   payload,
   verticalAlign = "bottom",
   nameKey,
-}) {
+}) { // Removed type annotation
   const { config } = useChart();
 
   if (!payload?.length) {
@@ -285,9 +278,9 @@ function ChartLegendContent({
 
 // Helper to extract item config from a payload.
 function getPayloadConfigFromPayload(
-  config: ChartConfig,
-  payload: unknown,
-  key: string,
+  config, // Removed type annotation
+  payload, // Removed type annotation
+  key, // Removed type annotation
 ) {
   if (typeof payload !== "object" || payload === null) {
     return undefined;
@@ -300,26 +293,24 @@ function getPayloadConfigFromPayload(
       ? payload.payload
       : undefined;
 
-  let configLabelKey: string = key;
+  let configLabelKey = key; // Removed type annotation
 
   if (
     key in payload &&
-    typeof payload[key typeof payload] === "string"
+    typeof payload[key] === "string" // Simplified type check
   ) {
-    configLabelKey = payload[key typeof payload];
+    configLabelKey = payload[key]; // Simplified type assertion
   } else if (
     payloadPayload &&
     key in payloadPayload &&
-    typeof payloadPayload[key typeof payloadPayload] === "string"
+    typeof payloadPayload[key] === "string" // Simplified type check
   ) {
-    configLabelKey = payloadPayload[
-      key typeof payloadPayload
-    ];
+    configLabelKey = payloadPayload[key]; // Simplified type assertion
   }
 
   return configLabelKey in config
     ? config[configLabelKey]
-    : config[key typeof config];
+    : config[key]; // Simplified type assertion
 }
 
 export {

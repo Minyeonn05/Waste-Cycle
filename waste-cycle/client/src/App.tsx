@@ -13,6 +13,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { ChatPage } from './components/ChatPage';
 import { ProfilePage } from './components/ProfilePage';
 import { ChatDialog } from './components/ChatDialog';
+import { RegisterPage } from './components/RegisterPage';
 
 export type UserRole = 'user' | 'admin';
 
@@ -237,6 +238,11 @@ export default function App() {
     setCurrentPage('dashboard');
   };
 
+  const handleRegister = (userData: User) => {
+    setUser(userData);
+    setCurrentPage('dashboard');
+  };
+
   const handleLogout = () => {
     setUser(null);
     setCurrentPage('landing');
@@ -349,7 +355,23 @@ export default function App() {
   }
 
   if (!user && currentPage === 'login') {
-    return <LoginPage onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />;
+    return (
+      <LoginPage 
+        onLogin={handleLogin} 
+        onBack={() => setCurrentPage('landing')} 
+        onRegisterClick={() => setCurrentPage('register')}
+      />
+    );
+  }
+
+  if (!user && currentPage === 'register') {
+    return (
+      <RegisterPage 
+        onRegister={handleRegister} 
+        onBack={() => setCurrentPage('landing')} 
+        onLoginClick={() => setCurrentPage('login')}
+      />
+    );
   }
 
   const currentPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;

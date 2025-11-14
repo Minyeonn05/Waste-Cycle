@@ -9,9 +9,10 @@ import type { User, UserRole } from '../App';
 interface LoginPageProps {
   onLogin: (user: User) => void;
   onBack: () => void;
+  onRegisterClick: () => void;
 }
 
-export function LoginPage({ onLogin, onBack }: LoginPageProps) {
+export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -35,10 +36,6 @@ export function LoginPage({ onLogin, onBack }: LoginPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <Button variant="ghost" onClick={onBack} className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" /> กลับ
-        </Button>
-
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -89,6 +86,19 @@ export function LoginPage({ onLogin, onBack }: LoginPageProps) {
                 เข้าสู่ระบบ
               </Button>
             </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                ยังไม่มีบัญชี?{' '}
+                <button
+                  type="button"
+                  onClick={onRegisterClick}
+                  className="text-green-600 hover:text-green-700 hover:underline"
+                >
+                  ลงทะเบียน
+                </button>
+              </p>
+            </div>
 
             <div className="mt-4 text-center text-sm text-gray-600">
               <p>สำหรับทดสอบ: ใช้อีเมลและรหัสผ่านใดก็ได้</p>

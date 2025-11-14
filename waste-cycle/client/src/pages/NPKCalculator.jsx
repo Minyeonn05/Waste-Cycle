@@ -1,3 +1,4 @@
+// client/src/pages/NPKCalculator.jsx
 import { useState } from 'react';
 import { Beaker, Info } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../component/ui/card';
@@ -7,11 +8,7 @@ import { Label } from "../component/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/ui/select";
 import { Alert, AlertDescription } from "../component/ui/alert";
 
-
-
-
-
-
+// 🚨 [อัปเดต 1] ฐานข้อมูล NPK เฉพาะ ไก่, โค, และ สุกร
 const npkDatabase = {
   chicken: [
     { animalType: 'ไก่', wasteType: 'fresh', feedType: 'concentrate', npk: { n: 3.2, p: 2.8, k: 1.5 }, organicMatter: 65, moisture: 55 },
@@ -27,11 +24,6 @@ const npkDatabase = {
     { animalType: 'สุกร', wasteType: 'fresh', feedType: 'concentrate', npk: { n: 3.5, p: 3.0, k: 2.2 }, organicMatter: 68, moisture: 60 },
     { animalType: 'สุกร', wasteType: 'dried', feedType: 'concentrate', npk: { n: 4.8, p: 4.2, k: 3.0 }, organicMatter: 78, moisture: 18 },
     { animalType: 'สุกร', wasteType: 'composted', feedType: 'concentrate', npk: { n: 3.8, p: 3.2, k: 2.4 }, organicMatter: 62, moisture: 38 },
-  ],
-  duck: [
-    { animalType: 'เป็ด', wasteType: 'fresh', feedType: 'mixed', npk: { n: 2.8, p: 2.3, k: 1.6 }, organicMatter: 63, moisture: 58 },
-    { animalType: 'เป็ด', wasteType: 'dried', feedType: 'mixed', npk: { n: 4.0, p: 3.2, k: 2.3 }, organicMatter: 72, moisture: 17 },
-    { animalType: 'เป็ด', wasteType: 'composted', feedType: 'mixed', npk: { n: 2.9, p: 2.5, k: 1.8 }, organicMatter: 56, moisture: 36 },
   ],
 };
 
@@ -98,9 +90,9 @@ export function NPKCalculator({ user }) {
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกประเภทสัตว์" />
                   </SelectTrigger>
+                  {/* 🚨 [อัปเดต 2] แก้ไข Dropdown ให้เหลือ 3 อย่าง */}
                   <SelectContent>
                     <SelectItem value="chicken">ไก่</SelectItem>
-                    <SelectItem value="duck">เป็ด</SelectItem>
                     <SelectItem value="cow">โค</SelectItem>
                     <SelectItem value="pig">สุกร</SelectItem>
                   </SelectContent>

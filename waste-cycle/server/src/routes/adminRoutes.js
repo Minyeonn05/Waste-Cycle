@@ -2,40 +2,32 @@
 import express from 'express';
 import { 
   getAllUsers, 
-  verifyFarm, 
+  verifyFarmByUserId, // 👈 [แก้ไข] เปลี่ยนชื่อฟังก์ชัน
   removePost, 
   getReports 
-} from '../controllers/adminController.js'; // 👈 ดึงมาจาก adminController
-
+} from '../controllers/adminController.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
-import { requireAdmin } from '../middleware/roleMiddleware.js'; // 👈 [สำคัญ] ต้องเป็น Admin เท่านั้น
+import { requireAdmin } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// ----------------------------------------------------------------
-// 🔐 [Middleware] ล็อกทุก Route ในไฟล์นี้
-// ----------------------------------------------------------------
-// หมายความว่า ทุก API ในไฟล์นี้ ต้อง "Login" (verifyToken)
-// และ ต้อง "เป็น Admin" (requireAdmin) ถึงจะเรียกใช้ได้
+// ล็อกทุก Route ในไฟล์นี้ให้ Admin เท่านั้น
 router.use(verifyToken, requireAdmin);
 
-// ----------------------------------------------------------------
-// 🚀 API Routes
-// ----------------------------------------------------------------
-
-// (API-22) ดูรายชื่อผู้ใช้ทั้งหมด
+// API-22
 // GET /api/admin/users
 router.get('/users', getAllUsers);
 
-// (API-23) ยืนยันฟาร์ม
-// PUT /api/admin/verify-farm/:id
-router.put('/verify-farm/:id', verifyFarm);
+// 🚨 [แก้ไข] เปลี่ยน Route
+// (API-23)
+// PUT /api/admin/verify-farm-by-user/:userId
+router.put('/verify-farm-by-user/:userId', verifyFarmByUserId);
 
-// (API-24) ลบโพสต์ที่ไม่เหมาะสม
+// API-24
 // DELETE /api/admin/remove-post/:id
 router.delete('/remove-post/:id', removePost);
 
-// (API-25) ดูรายงานสรุป
+// API-25
 // GET /api/admin/reports
 router.get('/reports', getReports);
 

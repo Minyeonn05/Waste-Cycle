@@ -139,7 +139,7 @@ export function Header({ user, onLogout, onNavigate, currentPage }: HeaderProps)
       {/* Mobile Sidebar Menu */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0  bg-opacity-50 z-40 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div 

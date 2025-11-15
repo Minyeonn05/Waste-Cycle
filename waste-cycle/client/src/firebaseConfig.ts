@@ -7,12 +7,12 @@ import { getAuth } from 'firebase/auth';
 // 🚨 (นี่เป็น Key ฝั่ง Client ปลอดภัยที่จะไว้ที่นี่)
 // 🚨🚨🚨
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDQwZJTHaAS4JLEo2CExBp_3lbGJMHqYCo",
+  authDomain: "waste-cy.firebaseapp.com",
+  projectId: "waste-cy",
+  storageBucket: "waste-cy.appspot.com",
+  messagingSenderId: "27038277363",
+  appId: "1:27038277363:web:33ec29157710e443cae186"
 };
 
 // Initialize Firebase

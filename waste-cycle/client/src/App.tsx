@@ -383,7 +383,7 @@ export default function App() {
 
         {/* 🚨🚨🚨 บั๊ก: CircularEconomy ไม่มี component นี้ ผมจะใช้ CircularView แทน */}
         {currentPage === 'circular-view' && user.role !== 'admin' && (
-          <CircularView /> // 🚨🚨 แก้ไขชื่อ Component
+          <CircularEconomy/> // 🚨🚨 แก้ไขชื่อ Component 
         )}
         {currentPage === 'admin' && user?.role === 'admin' && <AdminPanel />}
         {currentPage === 'chat' && user?.role !== 'admin' && (

@@ -5,13 +5,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Recycle } from 'lucide-react';
-
-// 1. Import Firebase และ setAuthToken
 import { auth } from '../firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { setAuthToken } from '../apiServer'; // <-- 🚨 Import นี้สำคัญมาก
+import { setAuthToken } from '../apiServer'; 
 
-// 2. สร้าง Interface สำหรับข้อมูลโปรไฟล์
 interface ProfileFormData {
   name: string;
   farmName?: string;
@@ -19,7 +16,7 @@ interface ProfileFormData {
 }
 
 interface RegisterPageProps {
-  onRegisterSuccess: (data: ProfileFormData) => void; // <-- 🚨 เปลี่ยน Prop เป็น onRegisterSuccess
+  onRegisterSuccess: (data: ProfileFormData) => void; 
   onBack: () => void;
   onLoginClick: () => void;
 }
@@ -46,14 +43,14 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
     setIsLoading(true);
 
     try {
-      // 3. 🚨 ขั้นตอนที่ 1: สร้าง User ใน Firebase Auth
+      // 1: สร้าง User ใน Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // 4. 🚨 ขั้นตอนที่ 2 (ที่ขาดไปในรอบก่อน): ขอ Token และตั้งค่าทันที
+      // 2: ขอ Token และตั้งค่าทันที
       const token = await userCredential.user.getIdToken();
-      setAuthToken(token); // <-- 🚨 บรรทัดนี้แก้บั๊ก Race Condition
+      setAuthToken(token); 
 
-      // 5. 🚨 ขั้นตอนที่ 3: ส่งข้อมูลโปรไฟล์กลับไป App.tsx
+      // 3: ส่งข้อมูลโปรไฟล์กลับไป App.tsx
       onRegisterSuccess({
         name,
         farmName: isAdmin ? undefined : (farmName.trim() || undefined),
@@ -81,6 +78,7 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
           
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
+              {/* (Input fields: name, email, password, etc.) */}
               <div className="space-y-2">
                 <Label htmlFor="name">ชื่อ-นามสกุล</Label>
                 <Input
@@ -191,7 +189,7 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
   );
 }
 
-// ฟังก์ชันช่วยแปล Error Code
+// ... (getFirebaseErrorMessage function) ...
 const getFirebaseErrorMessage = (code: string) => {
   switch (code) {
     case 'auth/email-already-in-use':

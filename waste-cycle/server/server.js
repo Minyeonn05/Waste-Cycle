@@ -33,23 +33,22 @@ const PORT = process.env.PORT || 8000;
 
 // Middleware
 app.use(cors({
-  // 👇 🚨 นี่คือจุดที่แก้ไข: เพิ่ม Port 3000
+  // 👇 🚨 นี่คือจุดที่แก้ไข: เพิ่ม Port ของ Client
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:3001' // 👈 เพิ่มบรรทัดนี้
+    'http://localhost:3001', // 👈 เพิ่ม Port 3001
+    'http://localhost:5173'  // 👈 เพิ่ม Port 5173 (ค่าเริ่มต้น Vite)
   ],
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging middleware
+// ... (Logging middleware และ Health check - เหมือนเดิม) ...
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
-
-// Health check
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -58,6 +57,7 @@ app.get('/health', (req, res) => {
   });
 });
 
+
 // ---------------------------------
 // 🚀 API Routes (เชื่อมต่อทั้งหมด)
 // ---------------------------------
@@ -65,7 +65,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
 // (API เดิม)
-app.use('/api/wastes', wasteRoutes); // (ตัวนี้อาจจะ link ไปที่ productRoutes)
+app.use('/api/wastes', wasteRoutes); 
 app.use('/api/products', productRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/bookings', bookingRoutes);
@@ -75,16 +75,16 @@ app.use('/api/farms', farmRoutes);
 app.use('/api/chat', chatRoutes); 
 
 // (API ใหม่ตามรูป)
-app.use('/api/analyze', analyzeRoutes);       // API-18
-app.use('/api/market', marketRoutes);         // API-19, 20
-app.use('/api/visualization', visualizationRoutes); // API-21
-app.use('/api/admin', adminRoutes);           // API-22, 23, 24, 25
+app.use('/api/analyze', analyzeRoutes);       
+app.use('/api/market', marketRoutes);         
+app.use('/api/visualization', visualizationRoutes); 
+app.use('/api/admin', adminRoutes);           
 
 // (API ใหม่สำหรับแจ้งเตือน)
 app.use('/api/notifications', notificationRoutes);
 
 
-// 404 handler (ถ้าไม่เจอ Route ไหนเลย)
+// ... (404 handler และ Error handling - เหมือนเดิม) ...
 app.use((req, res) => {
   res.status(404).json({ 
     success: false,
@@ -92,9 +92,8 @@ app.use((req, res) => {
     path: req.path 
   });
 });
-
-// Error handling middleware (ตัวจัดการ Error กลาง)
 app.use(errorHandler);
+
 
 // Start server
 app.listen(PORT, () => {

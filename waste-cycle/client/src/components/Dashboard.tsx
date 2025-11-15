@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 // --- 🚨 START: แก้ไข Imports ---
+// (แยก import ตามไฟล์จริง)
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -104,7 +105,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                 <Input
                   type="search"
                   placeholder="ค้นหา..."
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/S/3 lg:w-1/3"
                 />
               </div>
             </form>

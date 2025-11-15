@@ -16,7 +16,7 @@ interface User {
   role: 'user' | 'admin';
   farmName?: string;
   verified?: boolean;
-  photoURL?: string; // (เพิ่ม photoURL)
+  photoURL?: string; 
 }
 
 interface ProfileFormData {
@@ -92,20 +92,16 @@ function App() {
       // (แก้ไขการดักจับ Error ให้ฉลาดขึ้น)
       let errorMsg = 'Unknown error';
       if (err.response) {
-        // ถ้า Server ตอบกลับมาเป็น Error (เช่น 404, 500)
         errorMsg = err.response.data?.error || err.response.data?.message || 'Server error';
       } else if (err.request) {
-        // ถ้า Server ไม่ตอบเลย (เช่น Server พัง, net::ERR_CONNECTION_RESET)
         errorMsg = 'Server ไม่ตอบสนอง (อาจกำลังปรับปรุง)';
       } else {
-        // Error อื่นๆ
         errorMsg = err.message || 'An unexpected error occurred';
       }
 
       setError(errorMsg);
       toast.error(`สร้างโปรไฟล์ไม่สำเร็จ: ${errorMsg}`);
       
-      // ถ้าสร้างโปรไฟล์ล้มเหลว ให้ Sign out ออกจาก Auth ด้วย
       auth.signOut();
       setAuthToken(null);
     } finally {
@@ -113,8 +109,6 @@ function App() {
     }
   };
 
-
-  // ... (ส่วน Render) ...
   if (!authChecked || (isLoading && currentPage === 'loading')) {
     return (
       <div className="flex items-center justify-center min-h-screen">

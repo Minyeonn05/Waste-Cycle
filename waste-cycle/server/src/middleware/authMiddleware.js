@@ -2,7 +2,7 @@
 import { auth, db } from '../config/firebaseConfig.js';
 
 /**
- * ✅ Middleware ที่ถูกต้อง - ไม่ใช้ global variable
+ * ✅ Middleware ที่แก้ไขปัญหา "Chicken-and-Egg" แล้ว
  */
 export const verifyToken = async (req, res, next) => {
   try {
@@ -18,43 +18,51 @@ export const verifyToken = async (req, res, next) => {
     
     const token = authHeader.split('Bearer ')[1];
     
-    // ✅ CRITICAL: ตรวจสอบ token ทุกครั้ง ไม่ cache
+    // 1. ตรวจสอบ Token (เหมือนเดิม)
     const decodedToken = await auth.verifyIdToken(token, true); // checkRevoked = true
     
-    // ✅ CRITICAL: ดึง role จาก Firestore แบบ real-time
-    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
-    
-    if (!userDoc.exists) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found in database',
-        code: 'USER_NOT_FOUND'
-      });
-    }
-    
-    const userData = userDoc.data();
-    
-    // ✅ CRITICAL: เก็บข้อมูลใน req เท่านั้น ไม่ใช้ global
-    req.user = {
+    // --- 🚨 START: ส่วนที่แก้ไข ---
+
+    // 2. ดึงข้อมูล "พื้นฐาน" จาก Token (มีแน่นอน)
+    const baseUser = {
       uid: decodedToken.uid,
       email: decodedToken.email,
-      displayName: userData.displayName || decodedToken.name,
-      photoURL: userData.photoURL || decodedToken.picture,
       emailVerified: decodedToken.email_verified,
-      role: userData.role || 'user',
-      // ✅ เพิ่ม timestamp เพื่อ debug
-      tokenIssuedAt: new Date(decodedToken.iat * 1000).toISOString(),
-      tokenExpireAt: new Date(decodedToken.exp * 1000).toISOString()
+      role: decodedToken.role || 'user' // เอา Role จาก Token มาเป็นค่าเริ่มต้น
     };
+
+    // 3. "พยายาม" ดึงโปรไฟล์จาก Firestore
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
     
-    // ✅ Log เพื่อ debug (ลบออกใน production)
-    console.log(`✅ Auth Success: ${req.user.email} (${req.user.uid})`);
+    if (userDoc.exists) {
+      // 4A. ถ้ามีโปรไฟล์: ให้ใช้ข้อมูลจากโปรไฟล์ (ดีกว่าและอัปเดตกว่า)
+      const firestoreData = userDoc.data();
+      req.user = {
+        ...baseUser,
+        ...firestoreData, // ทับข้อมูลด้วย data จาก Firestore (เช่น name, farmName)
+        role: firestoreData.role || baseUser.role // (สำคัญ) ยึด Role จาก Firestore เป็นหลัก
+      };
+    } else {
+      // 4B. 🚨 ถ้าไม่มีโปรไฟล์ (เช่น ตอนกำลังจะสร้าง):
+      // นี่ไม่ใช่ Error! แค่ส่งข้อมูลพื้นฐานจาก Token ไปให้ Controller
+      req.user = baseUser;
+    }
+    
+    // --- 🚨 END: ส่วนที่แก้ไข ---
+
+    // (Optional) เพิ่มข้อมูล Debug
+    req.user.tokenIssuedAt = new Date(decodedToken.iat * 1000).toISOString();
+    req.user.tokenExpireAt = new Date(decodedToken.exp * 1000).toISOString();
+    
+    console.log(`✅ Auth Success: ${req.user.email} (${req.user.uid}) [Role: ${req.user.role}]`);
     
     next();
+
   } catch (error) {
     console.error('❌ Token verification error:', error.code, error.message);
     
-    // ✅ CRITICAL: ส่ง error code ที่ชัดเจน
+    // (ส่วนจัดการ Error อื่นๆ เหมือนเดิม)
+    
     if (error.code === 'auth/id-token-expired') {
       return res.status(401).json({
         success: false,
@@ -92,6 +100,7 @@ export const verifyToken = async (req, res, next) => {
 
 /**
  * ✅ Middleware เพิ่มเติม: ตรวจสอบว่า userId ตรงกับ resource
+ * (อันนี้เหมือนเดิม ไม่ต้องแก้)
  */
 export const requireOwnership = (resourceUserIdField = 'userId') => {
   return async (req, res, next) => {

@@ -61,6 +61,7 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
                   type="email"
                   placeholder="your@email.com"
                   value={email}
+                  // 👇 🚨 แก้ไขบรรทัดนี้ครับ
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
@@ -72,7 +73,7 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

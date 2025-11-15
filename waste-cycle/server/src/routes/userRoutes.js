@@ -8,14 +8,16 @@ import {
   updateUserRole,
   deleteUser,
 } from '../controllers/userController.js';
-import { protect } from '../middleware/authMiddleware.js';
+// แก้ไข: import ยามตัวใหม่เข้ามา
+import { protect, protectTokenOnly } from '../middleware/authMiddleware.js';
 import { admin } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
 router.route('/profile')
   .get(protect, getUserProfile)
-  .post(protect, createUserProfile)
+  // แก้ไข: เปลี่ยนจาก protect -> protectTokenOnly
+  .post(protectTokenOnly, createUserProfile) 
   .put(protect, updateUserProfile);
 
 router.route('/')

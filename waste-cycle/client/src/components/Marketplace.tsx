@@ -246,7 +246,7 @@ function ModernPostCard({ post, isMyPost, onViewDetail, onEdit, onDelete, onChat
         {/* Chatting Badge */}
         {isChatting && !post.sold && (
           <Badge className="absolute top-3 right-3 bg-yellow-400 text-gray-900 shadow-lg">
-            กำลังพูดคุย
+            💬 กำลังพูดคุย
           </Badge>
         )}
         

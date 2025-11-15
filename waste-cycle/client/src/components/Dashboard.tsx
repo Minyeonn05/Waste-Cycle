@@ -59,7 +59,7 @@ export function Dashboard({
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={defaultCenter}
-        zoom={5}
+        zoom={12}
       >
         {postsWithCoords.map((post) => (
           <MarkerF

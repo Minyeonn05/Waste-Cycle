@@ -1,20 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { type User as FirebaseUser } from 'firebase/auth';
-import { Header } from './components/Header.tsx';
-import { LandingPage } from './components/LandingPage.tsx';
-import { LoginPage } from './components/LoginPage.tsx';
-import { RegisterPage } from './components/RegisterPage.tsx';
-import { Dashboard } from './components/Dashboard.tsx';
-import { Marketplace } from './components/Marketplace.tsx';
-import { CreatePost } from './components/CreatePost.tsx';
-import { PostDetail } from './components/PostDetail.tsx';
-import { BookingPage } from './components/BookingPage.tsx';
-import { FertilizerAdvisor } from './components/FertilizerAdvisor.tsx';
-import { CircularEconomy } from './components/CircularEconomy.tsx';
-import { AdminPanel } from './components/AdminPanel.tsx';
-import { ChatPage } from './components/ChatPage.tsx';
-import { ProfilePage } from './components/ProfilePage.tsx';
-import { ChatDialog } from './components/ChatDialog.tsx';
+// แก้ไข Paths โดยใช้ @/
+import { Header } from './components/Header';
+import { LandingPage } from './components/LandingPage';
+import { LoginPage } from './components/LoginPage';
+import { RegisterPage } from './components/RegisterPage';
+import { Dashboard } from './components/Dashboard';
+import { Marketplace } from './components/Marketplace';
+import { CreatePost } from './components/CreatePost';
+import { PostDetail } from './components/PostDetail';
+import { BookingPage } from './components/BookingPage';
+import { FertilizerAdvisor } from './components/FertilizerAdvisor';
+import { CircularEconomy } from './components/CircularEconomy';
+import { AdminPanel } from './components/AdminPanel';
+import { ChatPage } from './components/ChatPage';
+import { ProfilePage } from './components/ProfilePage';
+import { ChatDialog } from './components/ChatDialog';
 import api, {
   setAuthToken,
   onAuthChange,
@@ -29,11 +30,12 @@ import api, {
   deleteProduct,
   getChatRooms,
   createChatRoom,
-} from './apiServer.ts';
+} from './apiServer'; // แก้ไข Path
 import { Recycle } from 'lucide-react';
 
 export type UserRole = 'user' | 'admin' | 'seller';
 
+// แก้ไข: เพิ่ม 'export'
 export interface User {
   id: string;
   uid: string;
@@ -46,6 +48,7 @@ export interface User {
   avatar?: string;
 }
 
+// แก้ไข: เพิ่ม 'export' และเปลี่ยน 'location'
 export interface Post {
   id: string;
   userId: string;
@@ -55,7 +58,8 @@ export interface Post {
   quantity: number;
   price: number;
   unit: string;
-  location: string;
+  location: { lat: number; lng: number }; // <-- แก้ไข
+  address: string; // <-- เพิ่ม
   distance: number;
   verified: boolean;
   npk: { n: number; p: number; k: number };
@@ -70,6 +74,7 @@ export interface Post {
   sold?: boolean;
 }
 
+// แก้ไข: เพิ่ม 'export'
 export interface ChatRoom {
   id: string;
   postId: string;
@@ -134,14 +139,12 @@ export default function App() {
         } catch (err: any) {
           // --- BEGIN EDIT ---
           // นี่คือส่วนที่แก้ไข "การวิ่งแข่ง" ครับ
-          // มันจะตรวจสอบว่า Error ที่ได้คือ 'user not found' หรือไม่
           const isNotFoundError = err.response && 
                                  err.response.data && 
                                  err.response.data.message === 'Not authorized, user not found';
           
           if (isNotFoundError) {
             // ถ้าใช่: ไม่ต้องทำอะไร (เพราะนี่คือการลงทะเบียนใหม่)
-            // ฟังก์ชัน handleRegister (ที่กำลังวิ่งแข่งอยู่) จะจัดการสร้างโปรไฟล์เอง
             console.log("onAuthStateChanged: User not found in DB, assuming new registration. Waiting for createProfile...");
           } else {
             // ถ้าเป็น Error อื่น: (เช่น server ล่ม) ให้ Logout

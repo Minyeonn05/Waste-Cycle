@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { type User as FirebaseUser } from 'firebase/auth';
 import { Header } from './components/Header.tsx';
 import { LandingPage } from './components/LandingPage.tsx';
 import { LoginPage } from './components/LoginPage.tsx';
@@ -122,7 +123,7 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (firebaseUser) => {
+    const unsubscribe = onAuthChange(async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         try {
           const token = await firebaseUser.getIdToken();
@@ -130,10 +131,25 @@ export default function App() {
           const response = await getMyProfile();
           setUser(response.data.user);
           setCurrentPage('dashboard');
-        } catch (err) {
-          console.error("Auth error:", err);
-          setUser(null);
-          setAuthToken(null);
+        } catch (err: any) {
+          // --- BEGIN EDIT ---
+          // นี่คือส่วนที่แก้ไข "การวิ่งแข่ง" ครับ
+          // มันจะตรวจสอบว่า Error ที่ได้คือ 'user not found' หรือไม่
+          const isNotFoundError = err.response && 
+                                 err.response.data && 
+                                 err.response.data.message === 'Not authorized, user not found';
+          
+          if (isNotFoundError) {
+            // ถ้าใช่: ไม่ต้องทำอะไร (เพราะนี่คือการลงทะเบียนใหม่)
+            // ฟังก์ชัน handleRegister (ที่กำลังวิ่งแข่งอยู่) จะจัดการสร้างโปรไฟล์เอง
+            console.log("onAuthStateChanged: User not found in DB, assuming new registration. Waiting for createProfile...");
+          } else {
+            // ถ้าเป็น Error อื่น: (เช่น server ล่ม) ให้ Logout
+            console.error("Auth error:", err);
+            setUser(null);
+            setAuthToken(null);
+          }
+          // --- END EDIT ---
         }
       } else {
         setUser(null);
@@ -159,10 +175,13 @@ export default function App() {
     password: string,
     profileData: { name: string; farmName?: string; role: 'user' | 'admin' }
   ) => {
+    // 1. สร้าง User ใน Auth
     const userCredential = await registerUser(email, password);
     const token = await userCredential.user.getIdToken();
     setAuthToken(token);
+    // 2. สร้างโปรไฟล์ใน DB (POST /api/users/profile)
     const response = await createProfile(profileData);
+    // 3. ตั้งค่า User ใน React
     setUser(response.data.user);
     setCurrentPage('dashboard');
   };

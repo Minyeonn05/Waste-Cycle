@@ -1,19 +1,14 @@
-import admin from 'firebase-admin';
-import serviceAccount from './waste-cy-firebase-adminsdk-v4a5t-61f26533c3.json' assert { type: 'json' };
+import { initializeApp } from 'firebase/app';
 
-let app;
+const firebaseConfig = {
+  apiKey: "AIzaSyDQwZJTHaAS4JLEo2CExBp_3lbGJMHqYCo",
+  authDomain: "waste-cy.firebaseapp.com",
+  projectId: "waste-cy",
+  storageBucket: "waste-cy.appspot.com",
+  messagingSenderId: "27038277363",
+  appId: "1:27038277363:web:33ec29157710e443cae186"
+};
 
-if (!admin.apps.length) {
-  app = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    projectId: 'waste-cy',
-  });
-} else {
-  app = admin.app();
-}
+const app = initializeApp(firebaseConfig);
 
-const auth = app.auth();
-const db = app.firestore();
-const storage = app.storage();
-
-export { auth, db, storage, app };
+export default app;

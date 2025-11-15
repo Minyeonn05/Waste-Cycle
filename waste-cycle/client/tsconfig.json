@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+
+    /* 🚨 นี่คือบรรทัดที่แก้ปัญหาของคุณ 🚨 */
+    "jsx": "react-jsx",
+
+    /* 🚨 และเพิ่มส่วนนี้เพื่อให้แน่ใจว่ามันอ่านไฟล์ใน src 🚨 */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  
+  /* 🚨 และเพิ่มส่วนนี้เพื่อบอกว่าไฟล์ .tsx อยู่ที่ไหน 🚨 */
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

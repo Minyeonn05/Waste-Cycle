@@ -5,13 +5,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Recycle } from 'lucide-react';
-
-// 1. Import Firebase
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 interface LoginPageProps {
-  // 2. ลบ onLogin ออก (จัดการในนี้)
   onBack: () => void;
   onRegisterClick: () => void;
 }
@@ -30,8 +27,7 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
     try {
       // 3. เรียก Firebase Client SDK
       await signInWithEmailAndPassword(auth, email, password);
-      // ... จบ! ...
-      // onAuthStateChanged ใน App.tsx จะตรวจจับได้เอง
+      // (onAuthStateChanged ใน App.tsx จะตรวจจับได้เอง)
       
     } catch (err: any) {
       console.error("Firebase Login failed:", err.code);
@@ -61,7 +57,6 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
                   type="email"
                   placeholder="your@email.com"
                   value={email}
-                  // 👇 🚨 แก้ไขบรรทัดนี้ครับ
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
@@ -73,7 +68,7 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -111,7 +106,7 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
   );
 }
 
-// ฟังก์ชันช่วยแปล Error Code
+// ... (getFirebaseErrorMessage function) ...
 const getFirebaseErrorMessage = (code: string) => {
   switch (code) {
     case 'auth/invalid-credential':

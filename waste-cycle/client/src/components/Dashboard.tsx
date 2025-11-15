@@ -11,25 +11,32 @@ import {
   MessageSquare,
   Recycle,
   Lightbulb,
+  Search,
 } from 'lucide-react';
+
+// --- 🚨 START: แก้ไข Imports ---
+import { Button } from './ui/button';
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../components/ui'; // (สมมติว่า import มาจาก ./ui)
+} from './ui/dropdown-menu';
+import { Input } from './ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { auth } from '../firebaseConfig'; // (จำเป็นสำหรับ fallback)
+import { Badge } from './ui/badge';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from './ui/card';
+// --- 🚨 END: แก้ไข Imports ---
 
+// 1. 🚨 แก้ไข Interface User
 interface User {
   uid: string;
   email: string;
@@ -37,35 +44,70 @@ interface User {
   role: 'user' | 'admin';
   farmName?: string;
   verified?: boolean;
+  photoURL?: string; 
 }
 
-// 1. 🚨 เพิ่ม onLogout ใน Interface
+// 2. 🚨 เพิ่ม onLogout ใน Interface
 interface DashboardProps {
   user: User;
   onLogout: () => void;
 }
 
-// 2. 🚨 รับ onLogout เข้ามาใน props
+// 3. 🚨 รับ onLogout เข้ามาใน props
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [activePage, setActivePage] = useState('overview');
 
   const getInitials = (name: string) => {
+    if (!name) return '??';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      {/* ... (ส่วน Sidebar Navigation) ... */}
-      <nav className="hidden border-r bg-muted/40 md:block">
-        {/* ... (โค้ด Sidebar) ... */}
-      </nav>
-
+      {/* --- Sidebar --- */}
+      <div className="hidden border-r bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <a href="/" className="flex items-center gap-2 font-semibold">
+              <Recycle className="h-6 w-6 text-green-600" />
+              <span className="">Waste-Cycle</span>
+            </a>
+            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">Toggle notifications</span>
+            </Button>
+          </div>
+          <div className="flex-1">
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              <button
+                onClick={() => setActivePage('overview')}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
+                  activePage === 'overview' ? 'bg-muted text-primary' : 'text-muted-foreground'
+                } transition-all hover:text-primary`}
+              >
+                <Home className="h-4 w-4" />
+                ภาพรวม
+              </button>
+              {/* (เพิ่มปุ่มอื่นๆ... เช่น ตลาดซื้อขาย) */}
+            </nav>
+          </div>
+        </div>
+      </div>
+      
+      {/* --- Main Content --- */}
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          {/* ... (ส่วน Header ด้านบน) ... */}
-          
-          <div className="ml-auto flex-1 sm:flex-initial">
-            {/* ... (Search bar) ... */}
+          <div className="w-full flex-1">
+            <form>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="ค้นหา..."
+                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                />
+              </div>
+            </form>
           </div>
 
           <DropdownMenu>
@@ -85,8 +127,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <DropdownMenuItem>ตั้งค่า</DropdownMenuItem>
               <DropdownMenuSeparator />
               
-              {/* 3. 🚨 (สำคัญมาก) เปลี่ยน onClick ให้เรียก onLogout */}
-              <DropdownMenuItem onClick={onLogout}>
+              {/* 4. 🚨 (สำคัญมาก) เปลี่ยน onClick ให้เรียก onLogout */}
+              <DropdownMenuItem onClick={onLogout} className="text-red-600">
                 ออกจากระบบ
               </DropdownMenuItem>
 
@@ -95,22 +137,23 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         </header>
         
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          {/* ... (ส่วนเนื้อหา Dashboard) ... */}
+          {/* ... (เนื้อหา) ... */}
           <div className="flex items-center">
             <h1 className="text-lg font-semibold md:text-2xl">
               {activePage === 'overview' && 'ภาพรวม'}
-              {activePage === 'market' && 'ตลาดซื้อขาย'}
-              {/* ... (อื่นๆ) ... */}
             </h1>
           </div>
           <div
             className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm"
-            x-chunk="dashboard-02-chunk-1"
           >
-            {/* (นี่คือจุดที่ Component ของแต่ละหน้าจะถูก Render
-              เช่น <Marketplace /> หรือ <ProfilePage />
-              ขึ้นอยู่กับ state 'activePage')
-            */}
+            <div className="flex flex-col items-center gap-1 text-center">
+              <h3 className="text-2xl font-bold tracking-tight">
+                ยินดีต้อนรับ, {user.name}!
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                คุณสามารถเริ่มใช้งานได้เลย
+              </p>
+            </div>
           </div>
         </main>
       </div>

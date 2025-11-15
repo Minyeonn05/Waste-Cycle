@@ -9,7 +9,6 @@ import { RegisterPage } from './components/RegisterPage';
 import { Dashboard } from './components/Dashboard';
 import { Toaster, toast } from 'sonner';
 
-// ... (Interface User และ ProfileFormData เหมือนเดิม) ...
 interface User {
   uid: string;
   email: string;
@@ -17,6 +16,7 @@ interface User {
   role: 'user' | 'admin';
   farmName?: string;
   verified?: boolean;
+  photoURL?: string; // (เพิ่ม photoURL)
 }
 
 interface ProfileFormData {
@@ -34,7 +34,6 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // ... (useEffect ของ onAuthStateChanged) ...
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -66,7 +65,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // ... (useCallback ของ handleLogout) ...
   const handleLogout = useCallback(() => {
     auth.signOut();
     setAuthToken(null);
@@ -75,7 +73,6 @@ function App() {
     toast.success('ออกจากระบบสำเร็จ');
   }, []);
 
-  // ... (handleRegisterSuccess ที่แก้ไขแล้ว) ...
   const handleRegisterSuccess = async (profileData: ProfileFormData) => {
     setIsLoading(true);
     setError(null);
@@ -92,19 +89,18 @@ function App() {
     } catch (err: any) {
       console.error('💥 Registration Flow Error:', err);
 
-      // --- 🚨 START: แก้ไขการดักจับ Error ---
+      // (แก้ไขการดักจับ Error ให้ฉลาดขึ้น)
       let errorMsg = 'Unknown error';
       if (err.response) {
         // ถ้า Server ตอบกลับมาเป็น Error (เช่น 404, 500)
         errorMsg = err.response.data?.error || err.response.data?.message || 'Server error';
       } else if (err.request) {
         // ถ้า Server ไม่ตอบเลย (เช่น Server พัง, net::ERR_CONNECTION_RESET)
-        errorMsg = 'Server ไม่ตอบสนอง อาจกำลังปรับปรุง';
+        errorMsg = 'Server ไม่ตอบสนอง (อาจกำลังปรับปรุง)';
       } else {
         // Error อื่นๆ
         errorMsg = err.message || 'An unexpected error occurred';
       }
-      // --- 🚨 END: แก้ไขการดักจับ Error ---
 
       setError(errorMsg);
       toast.error(`สร้างโปรไฟล์ไม่สำเร็จ: ${errorMsg}`);

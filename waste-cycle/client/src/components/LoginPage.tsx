@@ -1,13 +1,16 @@
+// client/src/components/LoginPage.tsx
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { ArrowLeft, Recycle } from 'lucide-react';
-import type { User, UserRole } from '../App';
+// 🚨 ไม่จำเป็นต้อง import User และ UserRole ที่นี่แล้ว
+// import type { User, UserRole } from '../App';
 
 interface LoginPageProps {
-  onLogin: (user: User) => void;
+  // 🚨 1. แก้ไข: เปลี่ยน onLogin ให้รับ credentials
+  onLogin: (credentials: { email: string, password: string }) => void;
   onBack: () => void;
   onRegisterClick: () => void;
 }
@@ -15,11 +18,14 @@ interface LoginPageProps {
 export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  // 🚨 ลบ isAdmin state ออก - การกำหนด role ควรทำที่หน้า Register
+  // const [isAdmin, setIsAdmin] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 🚨 2. แก้ไข: ลบ mockUser ออก
+    /*
     const mockUser: User = {
       id: '1',
       email: email,
@@ -29,8 +35,11 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
       verified: true,
       avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
     };
-    
     onLogin(mockUser);
+    */
+    
+    // ✅ เรียก onLogin พร้อมส่งข้อมูลจริงกลับไปให้ App.tsx
+    onLogin({ email, password });
   };
 
   return (
@@ -71,6 +80,8 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
                 />
               </div>
 
+              {/* 🚨 ลบ Checkbox 'admin' ออกจากหน้า Login */}
+              {/*
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -81,6 +92,7 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
                 />
                 <Label htmlFor="admin" className="cursor-pointer">เข้าสู่ระบบในฐานะผู้ดูแลระบบ</Label>
               </div>
+              */}
 
               <Button type="submit" className="w-full">
                 เข้าสู่ระบบ
@@ -100,9 +112,11 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
               </p>
             </div>
 
+            {/*
             <div className="mt-4 text-center text-sm text-gray-600">
               <p>สำหรับทดสอบ: ใช้อีเมลและรหัสผ่านใดก็ได้</p>
             </div>
+            */}
           </CardContent>
         </Card>
       </div>

@@ -42,10 +42,6 @@ export const createProduct = async (req, res) => {
     // ✅ CRITICAL: ใช้ userId จาก token เท่านั้น
     const userId = req.user.uid;
     
-    // ❌ ห้าม: const userId = req.body.userId;
-    // ❌ ห้าม: const userId = req.body.user?.uid;
-    // ❌ ห้าม: const userId = req.query.userId;
-    
     // ✅ เช็คว่ามี userId หรือไม่
     if (!userId) {
       return res.status(401).json({
@@ -86,7 +82,7 @@ export const createProduct = async (req, res) => {
       seller: {
         uid: userId,
         email: req.user.email,
-        displayName: req.user.displayName
+        displayName: req.user.displayName || req.user.email // ใช้ email ถ้าไม่มี displayName
       },
       
       status: 'available',
@@ -291,4 +287,116 @@ export const getMyProducts = async (req, res) => {
   }
 };
 
-// ... (getAllProducts, getProductById, searchProducts เหมือนเดิม)
+// 🔴 --- ส่วนที่หายไป (เพิ่มส่วนนี้) --- 🔴
+
+/**
+ * 🌎 ดึงสินค้าทั้งหมด (Public)
+ * GET /api/products
+ */
+export const getAllProducts = async (req, res) => {
+  try {
+    const snapshot = await productsCollection
+      .where('status', '==', 'available')
+      .orderBy('createdAt', 'desc')
+      .get();
+    
+    const products = [];
+    snapshot.forEach(doc => {
+      products.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    res.json({
+      success: true,
+      count: products.length,
+      data: products
+    });
+  } catch (error) {
+    console.error('❌ Get all products error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch products'
+    });
+  }
+};
+
+/**
+ * 🌎 ดึงสินค้าชิ้นเดียว (Public)
+ * GET /api/products/:id
+ */
+export const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await productsCollection.doc(id).get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    // (Optional) เพิ่ม logic นับ views
+    
+    res.json({
+      success: true,
+      data: {
+        id: doc.id,
+        ...doc.data()
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get product by ID error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch product'
+    });
+  }
+};
+
+/**
+ * 🌎 ค้นหาสินค้า (Public)
+ * GET /api/products/search
+ */
+export const searchProducts = async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query parameter "q" is required'
+      });
+    }
+    
+    const searchTerm = q.toLowerCase();
+    
+    const snapshot = await productsCollection
+      .where('searchTerms', 'array-contains', searchTerm)
+      .where('status', '==', 'available')
+      .orderBy('createdAt', 'desc')
+      .get();
+    
+    const products = [];
+    snapshot.forEach(doc => {
+      products.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    res.json({
+      success: true,
+      count: products.length,
+      data: products
+    });
+  } catch (error) {
+    console.error('❌ Search products error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search products'
+    });
+  }
+};

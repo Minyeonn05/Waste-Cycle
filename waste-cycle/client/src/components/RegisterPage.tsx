@@ -1,13 +1,24 @@
+// client/src/components/RegisterPage.tsx
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { ArrowLeft, Recycle } from 'lucide-react';
-import type { User } from '../App';
+// 🚨 ไม่จำเป็นต้อง import User ที่นี่แล้ว
+// import type { User } from '../App';
+
+// 🚨 1. แก้ไข: สร้าง Interface สำหรับข้อมูลที่จะส่งไป Register
+interface RegisterFormData {
+  name: string;
+  email: string;
+  password: string;
+  farmName?: string;
+  role: 'user' | 'admin';
+}
 
 interface RegisterPageProps {
-  onRegister: (user: User) => void;
+  onRegister: (data: RegisterFormData) => void;
   onBack: () => void;
   onLoginClick: () => void;
 }
@@ -29,9 +40,9 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
       setError('รหัสผ่านไม่ตรงกัน');
       return;
     }
-
-    // ลบการตรวจสอบชื่อฟาร์มออก - ทำให้เป็น optional
     
+    // 🚨 2. แก้ไข: ลบ mockUser ออก
+    /*
     const mockUser: User = {
       id: Math.random().toString(36).substr(2, 9),
       email: email,
@@ -41,8 +52,20 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
       verified: true,
       avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
     };
-    
     onRegister(mockUser);
+    */
+    
+    // ✅ สร้างออบเจ็กต์ข้อมูลจริง
+    const formData: RegisterFormData = {
+      name,
+      email,
+      password,
+      role: isAdmin ? 'admin' : 'user',
+      farmName: isAdmin ? undefined : (farmName.trim() || undefined),
+    };
+    
+    // ✅ ส่งข้อมูลจริงกลับไปให้ App.tsx
+    onRegister(formData);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // <-- เพิ่ม useEffect
 import { Header } from './components/Header';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
@@ -14,20 +14,28 @@ import { ChatPage } from './components/ChatPage';
 import { ProfilePage } from './components/ProfilePage';
 import { ChatDialog } from './components/ChatDialog';
 import { RegisterPage } from './components/RegisterPage';
+import { Recycle } from 'lucide-react';
 
+// 🚨 1. Import apiService และ setAuthToken
+import apiService, { setAuthToken, getMe } from '../src/apiServer'; 
+
+// Interfaces (ยังคงเดิม)
 export type UserRole = 'user' | 'admin';
 
 export interface User {
-  id: string;
+  id: string; // Firebase จะใช้ uid
   email: string;
   name: string;
   role: UserRole;
   farmName?: string;
-  location?: { lat: number; lng: number };
   verified?: boolean;
   avatar?: string;
+  // เพิ่ม field อื่นๆ ที่ Backend ส่งมา
+  uid?: string; 
+  displayName?: string;
 }
 
+// ... (Interfaces Post, ChatRoom ยังคงเดิม) ...
 export interface Post {
   id: string;
   userId: string;
@@ -65,6 +73,7 @@ export interface ChatRoom {
   unread: number;
 }
 
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [user, setUser] = useState<User | null>(null);
@@ -75,183 +84,113 @@ export default function App() {
   const [confirmedChatRooms, setConfirmedChatRooms] = useState<Set<string>>(new Set());
   const [chatMessages, setChatMessages] = useState<Record<string, { id: string; senderId: string; text: string; timestamp: string; }[]>>({});
   
-  // Posts state - includes all posts from all users
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: '1',
-      userId: '1',
-      title: 'มูลไก่อินทรีย์',
-      animalType: 'ไก่ไข่',
-      wasteType: 'มูลแห้ง',
-      quantity: 500,
-      price: 320,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มไก่ไข่, ภูเก็ต',
-      distance: 4.2,
-      verified: true,
-      npk: { n: 3.5, p: 3.0, k: 1.8 },
-      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
-      description: 'มูลไก่คุณภาพดี เก็บจากฟาร์มที่มีการจัดการที่ดี ปราศจากเชื้อโรค',
-      images: ['https://images.unsplash.com/photo-1691526756635-0ac8703f5fa8?w=800'],
-      farmName: 'ฟาร์มของฉัน',
-      contactPhone: '081-234-5678',
-      rating: 4.8,
-      reviewCount: 24,
-      createdDate: '2024-11-10',
-    },
-    {
-      id: '2',
-      userId: '2',
-      title: 'มูลโคนมพร้อมใช้',
-      animalType: 'โคนม',
-      wasteType: 'มูลหมัก',
-      quantity: 2000,
-      price: 250,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มโคนม, สุรินทร์',
-      distance: 8.3,
-      verified: true,
-      npk: { n: 2.5, p: 1.8, k: 2.1 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลโคหมักพร้อมใช้ คุณภาพดี เหมาะสำหรับปลูกพืชทุกชนิด',
-      images: ['https://images.unsplash.com/photo-1723174515335-7eb28e74c0cb?w=800'],
-      farmName: 'ฟาร์มโคนมสุรินทร์',
-      contactPhone: '082-345-6789',
-      rating: 4.7,
-      reviewCount: 32,
-      createdDate: '2024-11-08',
-    },
-    {
-      id: '3',
-      userId: '3',
-      title: 'มูลสุกรหมัก',
-      animalType: 'สุกร',
-      wasteType: 'มูลหมัก',
-      quantity: 800,
-      price: 200,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มสุกร, นครปฐม',
-      distance: 15.7,
-      verified: true,
-      npk: { n: 3.8, p: 3.2, k: 2.4 },
-      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
-      description: 'มูลสุกรหมัก ผ่านกระบวนการหมักที่ถูกต้อง ไม่มีกลิ่น',
-      images: ['https://images.unsplash.com/photo-1674880785058-2c98aff0a62f?w=800'],
-      farmName: 'ฟาร์มสุกรนครปฐม',
-      contactPhone: '083-456-7890',
-      rating: 4.6,
-      reviewCount: 18,
-      createdDate: '2024-11-05',
-    },
-    {
-      id: '4',
-      userId: '4',
-      title: 'มูลเป็ดอินทรีย์',
-      animalType: 'เป็ด',
-      wasteType: 'มูลแห้ง',
-      quantity: 600,
-      price: 280,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มเป็ด, ราชบุรี',
-      distance: 12.5,
-      verified: true,
-      npk: { n: 3.2, p: 2.8, k: 1.6 },
-      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
-      description: 'มูลเป็ดคุณภาพดี เหมาะสำหรับพืชผักทุกชนิด มีธาตุอาหารสูง',
-      images: ['https://images.unsplash.com/photo-1663834780891-4cda88ea2794?w=800'],
-      farmName: 'ฟาร์มเป็ดราชบุรี',
-      contactPhone: '084-567-8901',
-      rating: 4.5,
-      reviewCount: 15,
-      createdDate: '2024-11-12',
-    },
-    {
-      id: '5',
-      userId: '5',
-      title: 'มูลแพะออร์แกนิค',
-      animalType: 'แพะ',
-      wasteType: 'มูลหมัก',
-      quantity: 400,
-      price: 350,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มแพะ, เพชรบุรี',
-      distance: 18.9,
-      verified: true,
-      npk: { n: 2.8, p: 2.0, k: 1.7 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลแพะหมักสุก เหมาะสำหรับพืชผักสวนครัว ไม่มีกลิ่น',
-      images: ['https://images.unsplash.com/photo-1723625449728-40e7a4d968e7?w=800'],
-      farmName: 'ฟาร์มแพะเพชรบุรี',
-      contactPhone: '085-678-9012',
-      rating: 4.9,
-      reviewCount: 21,
-      createdDate: '2024-11-11',
-    },
-    {
-      id: '6',
-      userId: '6',
-      title: 'มูลแกะคุณภาพพรีเมี่ยม',
-      animalType: 'แกะ',
-      wasteType: 'มูลหมัก',
-      quantity: 350,
-      price: 380,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มแกะ, กาญจนบุรี',
-      distance: 22.3,
-      verified: true,
-      npk: { n: 3.0, p: 2.2, k: 1.8 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลแกะพรีเมี่ยม หมักสุก อุดมด้วยธาตุอาหาร เหมาะกับไม้ดอกไม้ประดับ',
-      images: ['https://images.unsplash.com/photo-1681154258782-d9c41ae2d6da?w=800'],
-      farmName: 'ฟาร์มแกะกาญจนบุรี',
-      contactPhone: '086-789-0123',
-      rating: 4.8,
-      reviewCount: 19,
-      createdDate: '2024-11-09',
-    },
-    {
-      id: '7',
-      userId: '7',
-      title: 'มูลกระบือหมักสุก',
-      animalType: 'กระบือ',
-      wasteType: 'มูลหมัก',
-      quantity: 1500,
-      price: 220,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มกระบือ, สุพรรณบุรี',
-      distance: 25.6,
-      verified: true,
-      npk: { n: 2.3, p: 1.6, k: 2.3 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลกระบือหมักสุก เหมาะสำหรับนาข้าว ไร่อ้อย และพืชไร่',
-      images: ['https://images.unsplash.com/photo-1566956884055-5034d746e52f?w=800'],
-      farmName: 'ฟาร์มกระบือสุพรรณบุรี',
-      contactPhone: '087-890-1234',
-      rating: 4.6,
-      reviewCount: 28,
-      createdDate: '2024-11-07',
-    },
-  ]);
+  // 🚨 ลบ Mock data ของ posts ออก
+  const [posts, setPosts] = useState<Post[]>([]);
 
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    setCurrentPage('dashboard');
+  // 🚨 2. เพิ่ม State สำหรับ Loading และ Error
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+
+  // 🚨 3. ใช้ useEffect เพื่อตรวจสอบการ Login ค้าง (เมื่อ Refresh)
+  useEffect(() => {
+    const checkLoggedInStatus = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          // ถ้ามี Token, ให้ตั้งค่าใน axios ทันที
+          setAuthToken(token); 
+          // ดึงข้อมูล /api/auth/me จาก backend
+          const response = await getMe(); 
+          setUser(response.data.user); // (อ้างอิงจาก authController.js)
+          setCurrentPage('dashboard');
+        } catch (err) {
+          // ถ้า Token หมดอายุ หรือไม่ถูกต้อง
+          setAuthToken(null); // ล้าง Token ทิ้ง
+          setUser(null);
+        }
+      }
+      // โหลดข้อมูล Posts (สำหรับทุกคน)
+      try {
+        const postsResponse = await apiService.get('/products');
+        setPosts(postsResponse.data.data); // (อ้างอิงจาก productController.js)
+      } catch (postError) {
+        console.error("Failed to fetch posts:", postError);
+      }
+      
+      setIsLoading(false);
+    };
+
+    checkLoggedInStatus();
+  }, []); // [] = รันครั้งเดียวตอนเปิดแอป
+
+  
+  // 🚨 4. แก้ไข handleLogin ให้เรียก API
+  const handleLogin = async (credentials: { email: string, password: string }) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // credentials คือ { email, password } ที่ส่งมาจาก LoginPage
+      const response = await apiService.post('/auth/login', credentials);
+      
+      const { user, token } = response.data;
+
+      setUser(user);
+      setAuthToken(token); // บันทึก Token
+      setCurrentPage('dashboard');
+
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      const errorMessage = err.response?.data?.error || 'เข้าสู่ระบบไม่สำเร็จ';
+      setError(errorMessage);
+      alert(`เข้าสู่ระบบไม่สำเร็จ: ${errorMessage}`); // ใช้วิธีง่ายๆ ก่อน
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegister = (userData: User) => {
-    setUser(userData);
-    setCurrentPage('dashboard');
+  // 🚨 5. แก้ไข handleRegister ให้เรียก API
+  const handleRegister = async (formData: any) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // formData คือ { name, email, password, ... } ที่ส่งมาจาก RegisterPage
+      const response = await apiService.post('/auth/register', formData);
+
+      const { user, token } = response.data;
+
+      setUser(user);
+      setAuthToken(token); // บันทึก Token
+      setCurrentPage('dashboard'); // สมัครเสร็จ เข้าสู่ระบบเลย
+
+    } catch (err: any) {
+      console.error("Register failed:", err);
+      const errorMessage = err.response?.data?.error || 'สมัครสมาชิกไม่สำเร็จ';
+      setError(errorMessage);
+      alert(`สมัครสมาชิกไม่สำเร็จ: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setCurrentPage('landing');
-    setPosts(posts.filter(p => p.userId !== user?.id)); // Keep other users' posts
+  // 🚨 6. แก้ไข handleLogout ให้เรียก API
+  const handleLogout = async () => {
+    try {
+      await apiService.post('/auth/logout'); // เรียก API (ถ้ามี)
+    } catch (err) {
+      console.error("Logout API call failed:", err);
+    } finally {
+      // ล้างข้อมูลฝั่ง Client เสมอ
+      setUser(null);
+      setAuthToken(null); // ล้าง Token
+      setCurrentPage('landing');
+      // setPosts(posts.filter(p => p.userId !== user?.id)); // (Logic นี้อาจจะไม่จำเป็นแล้ว)
+    }
   };
 
   const navigateTo = (page: string) => {
     setCurrentPage(page);
-    // Don't reset selectedPostId if we're editing
     if (page !== 'create-post') {
       setSelectedPostId(null);
     }
@@ -259,6 +198,9 @@ export default function App() {
       setIsEditingPost(false);
     }
   };
+
+  // ... (ฟังก์ชัน handleCreatePost, handleUpdatePost ฯลฯ ก็ต้องแก้ให้เรียก API เหมือนกัน) ...
+  // (ผมจะข้ามไปก่อน โฟกัสที่ Login/Register)
 
   const handleViewPostDetail = (postId: string) => {
     setSelectedPostId(postId);
@@ -272,6 +214,7 @@ export default function App() {
   };
 
   const handleCreatePost = (newPost: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => {
+    // 🚨 TODO: ต้องแก้ให้เรียก API
     const post: Post = {
       ...newPost,
       id: Date.now().toString(),
@@ -286,6 +229,7 @@ export default function App() {
   };
 
   const handleUpdatePost = (postId: string, updatedData: Partial<Post>) => {
+    // 🚨 TODO: ต้องแก้ให้เรียก API
     setPosts(posts.map(p => p.id === postId ? { ...p, ...updatedData } : p));
     setSelectedPostId(null);
     setIsEditingPost(false);
@@ -293,6 +237,7 @@ export default function App() {
   };
 
   const handleDeletePost = (postId: string) => {
+    // 🚨 TODO: ต้องแก้ให้เรียก API
     setPosts(posts.filter(p => p.id !== postId));
     navigateTo('marketplace');
   };
@@ -306,10 +251,10 @@ export default function App() {
   };
 
   const handleConfirmChat = (postId: string) => {
+    // 🚨 TODO: ต้องแก้ให้เรียก API
     const post = posts.find(p => p.id === postId);
     if (!post || !user) return;
     
-    // สร้างห้องแชทใหม่แต่ไม่เปลี่ยนสถานะโพสต์
     setChatRooms(prev => [...prev, {
       id: Date.now().toString(),
       postId: postId,
@@ -327,28 +272,34 @@ export default function App() {
   };
 
   const handleConfirmSale = (postId: string, roomId: string) => {
-    // เปลี่ยนสถานะโพสต์เป็น sold เมื่อยืนยันในหน้าแชท
+    // 🚨 TODO: ต้องแก้ให้เรียก API
     setPosts(posts.map(p => p.id === postId ? { ...p, sold: true } : p));
-    // เก็บสถานะว่าห้องนี้ยืนยันแล้ว
     setConfirmedChatRooms(prev => new Set([...prev, roomId]));
   };
 
   const handleCancelChat = (roomId: string) => {
-    // ลบห้องแชทออกจากรายการ
+    // 🚨 TODO: ต้องแก้ให้เรียก API
     setChatRooms(prev => prev.filter(room => room.id !== roomId));
-    // ลบข้อความแชทออก
     setChatMessages(prev => {
       const newMessages = { ...prev };
       delete newMessages[roomId];
       return newMessages;
     });
-    // ลบสถานะยืนยันถ้ามี
     setConfirmedChatRooms(prev => {
       const newSet = new Set(prev);
       newSet.delete(roomId);
       return newSet;
     });
   };
+
+  // 🚨 7. เพิ่มหน้า Loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Recycle className="w-16 h-16 text-green-600 animate-spin" />
+      </div>
+    );
+  }
 
   if (!user && currentPage === 'landing') {
     return <LandingPage onGetStarted={() => setCurrentPage('login')} />;
@@ -357,7 +308,7 @@ export default function App() {
   if (!user && currentPage === 'login') {
     return (
       <LoginPage 
-        onLogin={handleLogin} 
+        onLogin={handleLogin} // <-- ส่งฟังก์ชันที่เรียก API ไป
         onBack={() => setCurrentPage('landing')} 
         onRegisterClick={() => setCurrentPage('register')}
       />
@@ -367,12 +318,19 @@ export default function App() {
   if (!user && currentPage === 'register') {
     return (
       <RegisterPage 
-        onRegister={handleRegister} 
+        onRegister={handleRegister} // <-- ส่งฟังก์ชันที่เรียก API ไป
         onBack={() => setCurrentPage('landing')} 
         onLoginClick={() => setCurrentPage('login')}
       />
     );
   }
+  
+  // 🚨 ถ้า login แล้ว แต่ user หายไป (บั๊ก)
+  if (!user) {
+    // อาจจะแสดงหน้า Error หรือกลับไปหน้า Login
+    return <LandingPage onGetStarted={() => setCurrentPage('login')} />;
+  }
+
 
   const currentPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
   const chatPost = chatPostId ? posts.find(p => p.id === chatPostId) : null;
@@ -384,9 +342,9 @@ export default function App() {
       <main className="pt-16">
         {currentPage === 'dashboard' && (
           <Dashboard 
-            user={user!} 
+            user={user} 
             onNavigate={navigateTo} 
-            posts={posts.filter(p => p.userId === user!.id)}
+            posts={posts.filter(p => p.userId === user.uid)} // 🚨 เปลี่ยนเป็น uid
             allPosts={posts}
             onViewDetail={handleViewPostDetail}
             onEdit={handleEditPost}
@@ -396,7 +354,7 @@ export default function App() {
         )}
         {currentPage === 'marketplace' && user?.role !== 'admin' && (
           <Marketplace 
-            user={user!} 
+            user={user} 
             posts={posts}
             onViewDetail={handleViewPostDetail}
             onEdit={handleEditPost}
@@ -407,7 +365,7 @@ export default function App() {
         )}
         {currentPage === 'create-post' && user?.role !== 'admin' && (
           <CreatePost 
-            user={user!} 
+            user={user} 
             onBack={() => navigateTo('marketplace')}
             onCreate={handleCreatePost}
             onUpdate={handleUpdatePost}
@@ -420,11 +378,11 @@ export default function App() {
             onBack={() => navigateTo('marketplace')}
             onEdit={() => handleEditPost(currentPost.id)}
             onDelete={() => handleDeletePost(currentPost.id)}
-            isMyPost={currentPost.userId === user?.id}
+            isMyPost={currentPost.userId === user.uid} // 🚨 เปลี่ยนเป็น uid
             onChat={() => handleOpenChat(currentPost.id)}
           />
         )}
-        {currentPage === 'bookings' && user?.role !== 'admin' && <BookingPage user={user!} />}
+        {currentPage === 'bookings' && user?.role !== 'admin' && <BookingPage user={user} />}
         {currentPage === 'fertilizer-advisor' && user.role !== 'admin' && (
           <FertilizerAdvisor 
             defaultTab="recommendation" 
@@ -457,7 +415,7 @@ export default function App() {
         {currentPage === 'admin' && user?.role === 'admin' && <AdminPanel />}
         {currentPage === 'chat' && user?.role !== 'admin' && (
           <ChatPage 
-            user={user!} 
+            user={user} 
             chatRooms={chatRooms}
             posts={posts}
             confirmedRoomIds={confirmedChatRooms}
@@ -468,13 +426,13 @@ export default function App() {
             onCancelChat={handleCancelChat}
           />
         )}
-        {currentPage === 'profile' && user?.role !== 'admin' && <ProfilePage user={user!} />}
+        {currentPage === 'profile' && user?.role !== 'admin' && <ProfilePage user={user} />}
         
         {/* Chat Dialog */}
         {chatPost && (
           <ChatDialog 
             post={chatPost}
-            currentUser={user!}
+            currentUser={user}
             onClose={handleCloseChat}
             onConfirm={() => handleConfirmChat(chatPost.id)}
           />

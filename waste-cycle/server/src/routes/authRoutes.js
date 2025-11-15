@@ -1,25 +1,12 @@
 // server/src/routes/authRoutes.js
 import express from 'express';
 
-// 🚨 1. [แก้ไข] ลบ ', getCurrentUser' ออกจากบรรทัดนี้ 🚨
-import { register, login } from '../controllers/authController.js';
-
-import { verifyToken } from '../middleware/authMiddleware.js';
-
+// 🚨 เราจะลบ /login และ /register ออกจากที่นี่
+// เราจะย้าย /status ไปที่ userRoutes.js
 const router = express.Router();
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
-
-// Protected routes (ตัวอย่าง ถ้าคุณจะเพิ่ม)
-// 🚨 2. [อธิบาย]
-// ถ้าคุณอยากได้ "Current User" ใน API
-// คุณแค่ต้องใช้ middleware 'verifyToken'
-// แล้ว Server จะรู้เองว่า "req.user" คือใคร (ดูตัวอย่างใน chatRoutes.js)
-//
-// router.get('/me', verifyToken, (req, res) => {
-//   res.json(req.user); 
-// });
+// (ไฟล์นี้จะไม่ถูกใช้อีก แต่เราจะเก็บไว้ก่อน)
+// เราจะย้าย getAuthStatus ไปที่ userController.js
+// router.get('/status', verifyToken, getAuthStatus); 
 
 export default router;

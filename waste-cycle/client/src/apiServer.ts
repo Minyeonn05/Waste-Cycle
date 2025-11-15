@@ -1,7 +1,6 @@
 // client/src/apiService.ts
 import axios from 'axios';
 
-// URL ของ Backend (ที่รันบน Port 8000)
 const API_URL = 'http://localhost:8000/api';
 
 const api = axios.create({
@@ -11,44 +10,31 @@ const api = axios.create({
 // ฟังก์ชันสำหรับตั้งค่า Token ใน Header
 export const setAuthToken = (token: string | null) => {
   if (token) {
-    // บันทึก Token ลงใน localStorage
     localStorage.setItem('authToken', token);
-    // ตั้งค่า Header ให้ axios อัตโนมัติ
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {
-    // ลบ Token ออก
     localStorage.removeItem('authToken');
     delete api.defaults.headers.common['Authorization'];
   }
 };
 
-// --- Auth Routes ---
-export const register = (formData: any) => {
-  // เราจะยิงไปที่ /api/auth/register ตามที่ authController.js กำหนด
-  return api.post('/auth/register', formData);
+// 🚨 1. เปลี่ยนชื่อฟังก์ชันให้สอดคล้องกัน (getAuthStatus -> getMyProfile)
+// (เราจะเปลี่ยนชื่อที่ Backend ด้วย)
+export const getMyProfile = () => {
+  return api.get('/users/profile'); // <-- เปลี่ยน URL
 };
 
-export const login = (credentials: any) => {
-  // เราจะยิงไปที่ /api/auth/login
-  return api.post('/auth/login', credentials);
+// 🚨 2. เพิ่มฟังก์ชันสำหรับ "สร้างโปรไฟล์" หลังจากสมัคร
+export const createProfile = (profileData: { name: string; farmName?: string; role: 'user' | 'admin' }) => {
+  return api.post('/users/profile', profileData); // <-- Endpoint ใหม่
 };
 
-export const logout = () => {
-  // ส่ง Token ไปให้ backend (ถ้ามี) เพื่อ logout
-  return api.post('/auth/logout');
-};
-
-export const getMe = () => {
-  // ดึงข้อมูลผู้ใช้ที่ login อยู่ โดยใช้ Token ที่บันทึกไว้
-  return api.get('/auth/me');
-};
-
-// --- Product Routes (ตัวอย่าง) ---
+// --- Product Routes ---
 export const getPosts = () => {
-  return api.get('/products'); // (สมมติว่า /products คือ route จาก wasteRoutes.js)
+  return api.get('/products');
 };
 
-// ... (เพิ่มฟังก์ชัน API อื่นๆ ที่นี่) ...
+// ... (ฟังก์ชัน API อื่นๆ) ...
 
 // ตรวจสอบ Token ตอนโหลดแอป
 const token = localStorage.getItem('authToken');

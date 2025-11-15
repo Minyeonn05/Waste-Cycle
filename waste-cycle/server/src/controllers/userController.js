@@ -1,31 +1,56 @@
 // server/src/controllers/userController.js
-import { db } from '../config/firebaseConfig.js';
-import asyncHandler from '../middleware/asyncHandler.js'; // 👈 [เพิ่ม]
+import { db, admin } from '../config/firebaseConfig.js';
 
-const usersCollection = db.collection('users');
+// 🚨 1. สร้าง: ฟังก์ชันสร้างโปรไฟล์ใน Firestore
+export const createUserProfile = async (req, res) => {
+  try {
+    // 1. ดึงข้อมูลจาก Body และ Token
+    const { name, farmName, role } = req.body;
+    const { uid, email } = req.user; // <-- มาจาก verifyToken
 
-// ดึงข้อมูลผู้ใช้ตาม ID
-export const getUserById = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const doc = await usersCollection.doc(id).get();
-  
-  if (!doc.exists) {
-    const error = new Error('User not found');
-    error.status = 404;
-    return next(error);
+    // 2. สร้างออบเจ็กต์โปรไฟล์
+    const userProfile = {
+      uid: uid,
+      email: email,
+      name: name,
+      farmName: farmName || null,
+      role: role || 'user',
+      createdAt: new Date().toISOString(),
+      verified: false, // หรือ true ถ้าคุณเชื่อถือการสมัครผ่าน Firebase
+    };
+
+    // 3. บันทึกลง Firestore
+    await db.collection('users').doc(uid).set(userProfile);
+
+    // 4. (สำคัญ) ตั้ง Role ใน Firebase Auth
+    // เพื่อให้ verifyToken รู้จัก role ในอนาคต
+    await admin.auth().setCustomUserClaims(uid, { role: userProfile.role });
+
+    console.log(`✅ Profile created for: ${email} (UID: ${uid})`);
+    res.status(201).json({ success: true, user: userProfile });
+
+  } catch (error) {
+    console.error('❌ Error creating user profile:', error);
+    res.status(500).json({ success: false, error: 'Failed to create profile' });
   }
-  
-  const userData = doc.data();
-  
-  res.json({
-    success: true,
-    data: {
-      id: doc.id,
-      displayName: userData.displayName,
-      photoURL: userData.photoURL,
-      role: userData.role,
-      location: userData.location,
-      bio: userData.bio
+};
+
+// 🚨 2. สร้าง: ฟังก์ชันดึงข้อมูลโปรไฟล์ตัวเอง
+// (นี่คือ 'getAuthStatus' ที่ย้ายมา)
+export const getMyProfile = async (req, res) => {
+  try {
+    const { uid } = req.user; // <-- มาจาก verifyToken
+    const userDoc = await db.collection('users').doc(uid).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ success: false, error: 'User profile not found' });
     }
-  });
-});
+
+    res.status(200).json({ success: true, user: userDoc.data() });
+  } catch (error) {
+    console.error('❌ Error fetching profile:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch profile' });
+  }
+};
+
+// ... (ฟังก์ชันเดิมของคุณ เช่น getUserById, updateUser ฯลฯ) ...

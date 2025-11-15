@@ -4,26 +4,26 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ArrowLeft, Recycle } from 'lucide-react';
-// 🚨 ไม่จำเป็นต้อง import User ที่นี่แล้ว
-// import type { User } from '../App';
+import { Recycle } from 'lucide-react';
 
-// 🚨 1. แก้ไข: สร้าง Interface สำหรับข้อมูลที่จะส่งไป Register
-interface RegisterFormData {
+// 🚨 1. Import Firebase
+import { auth } from '../firebaseConfig';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+
+// 🚨 2. สร้าง Interface สำหรับข้อมูลโปรไฟล์
+interface ProfileFormData {
   name: string;
-  email: string;
-  password: string;
   farmName?: string;
   role: 'user' | 'admin';
 }
 
 interface RegisterPageProps {
-  onRegister: (data: RegisterFormData) => void;
+  onRegisterSuccess: (data: ProfileFormData) => void; // <-- ส่งกลับไป App.tsx
   onBack: () => void;
   onLoginClick: () => void;
 }
 
-export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageProps) {
+export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: RegisterPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,8 +31,9 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
   const [farmName, setFarmName] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -40,32 +41,30 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
       setError('รหัสผ่านไม่ตรงกัน');
       return;
     }
-    
-    // 🚨 2. แก้ไข: ลบ mockUser ออก
-    /*
-    const mockUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      email: email,
-      name: name,
-      role: isAdmin ? 'admin' : 'user',
-      farmName: isAdmin ? undefined : (farmName.trim() || undefined),
-      verified: true,
-      avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
-    };
-    onRegister(mockUser);
-    */
-    
-    // ✅ สร้างออบเจ็กต์ข้อมูลจริง
-    const formData: RegisterFormData = {
-      name,
-      email,
-      password,
-      role: isAdmin ? 'admin' : 'user',
-      farmName: isAdmin ? undefined : (farmName.trim() || undefined),
-    };
-    
-    // ✅ ส่งข้อมูลจริงกลับไปให้ App.tsx
-    onRegister(formData);
+
+    setIsLoading(true);
+
+    try {
+      // 🚨 3. ขั้นตอนที่ 1: สร้าง User ใน Firebase Auth
+      await createUserWithEmailAndPassword(auth, email, password);
+      
+      // ... (onAuthStateChanged ใน App.tsx จะทำงาน) ...
+      
+      // 🚨 4. ขั้นตอนที่ 2: ส่งข้อมูลโปรไฟล์กลับไป App.tsx
+      // เพื่อให้ App.tsx เรียก API สร้างโปรไฟล์ใน Backend
+      onRegisterSuccess({
+        name,
+        farmName: isAdmin ? undefined : (farmName.trim() || undefined),
+        role: isAdmin ? 'admin' : 'user',
+      });
+
+      // App.tsx จะจัดการเปลี่ยนหน้าไป Dashboard
+      
+    } catch (err: any) {
+      console.error("Firebase Register failed:", err.code);
+      setError(getFirebaseErrorMessage(err.code));
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -91,6 +90,7 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -103,6 +103,7 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -116,6 +117,7 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -129,6 +131,7 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={6}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -141,6 +144,7 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                     placeholder="ฟาร์มของฉัน (ไม่บังคับ)"
                     value={farmName}
                     onChange={(e) => setFarmName(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
               )}
@@ -152,6 +156,7 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                   checked={isAdmin}
                   onChange={(e) => setIsAdmin(e.target.checked)}
                   className="rounded"
+                  disabled={isLoading}
                 />
                 <Label htmlFor="admin" className="cursor-pointer">ลงทะเบียนในฐานะผู้ดูแลระบบ</Label>
               </div>
@@ -162,8 +167,8 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
                 </div>
               )}
 
-              <Button type="submit" className="w-full">
-                ลงทะเบียน
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'กำลังสร้างบัญชี...' : 'ลงทะเบียน'}
               </Button>
             </form>
 
@@ -185,3 +190,17 @@ export function RegisterPage({ onRegister, onBack, onLoginClick }: RegisterPageP
     </div>
   );
 }
+
+// ฟังก์ชันช่วยแปล Error Code
+const getFirebaseErrorMessage = (code: string) => {
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'อีเมลนี้ถูกใช้งานแล้ว';
+    case 'auth/invalid-email':
+      return 'รูปแบบอีเมลไม่ถูกต้อง';
+    case 'auth/weak-password':
+      return 'รหัสผ่านสั้นเกินไป (ต้องอย่างน้อย 6 ตัวอักษร)';
+    default:
+      return 'เกิดข้อผิดพลาดในการลงทะเบียน';
+  }
+};

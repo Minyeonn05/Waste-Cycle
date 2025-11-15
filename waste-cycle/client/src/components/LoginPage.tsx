@@ -4,42 +4,41 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ArrowLeft, Recycle } from 'lucide-react';
-// 🚨 ไม่จำเป็นต้อง import User และ UserRole ที่นี่แล้ว
-// import type { User, UserRole } from '../App';
+import { Recycle } from 'lucide-react';
+
+// 🚨 1. Import Firebase
+import { auth } from '../firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 interface LoginPageProps {
-  // 🚨 1. แก้ไข: เปลี่ยน onLogin ให้รับ credentials
-  onLogin: (credentials: { email: string, password: string }) => void;
+  // 🚨 2. ลบ onLogin ออก (จัดการในนี้)
   onBack: () => void;
   onRegisterClick: () => void;
 }
 
-export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) {
+export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // 🚨 ลบ isAdmin state ออก - การกำหนด role ควรทำที่หน้า Register
-  // const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 🚨 2. แก้ไข: ลบ mockUser ออก
-    /*
-    const mockUser: User = {
-      id: '1',
-      email: email,
-      name: 'สมชาย เกษตรกร',
-      role: email.includes('admin') ? 'admin' : 'user',
-      farmName: email.includes('admin') ? undefined : 'ฟาร์มของฉัน',
-      verified: true,
-      avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
-    };
-    onLogin(mockUser);
-    */
-    
-    // ✅ เรียก onLogin พร้อมส่งข้อมูลจริงกลับไปให้ App.tsx
-    onLogin({ email, password });
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      // 🚨 3. เรียก Firebase Client SDK
+      await signInWithEmailAndPassword(auth, email, password);
+      // ... จบ! ...
+      // onAuthStateChanged ใน App.tsx จะตรวจจับได้เอง
+      // และจะพาไปหน้า Dashboard 
+    } catch (err: any) {
+      console.error("Firebase Login failed:", err.code);
+      setError(getFirebaseErrorMessage(err.code));
+      setIsLoading(false);
+    }
+    // ไม่ต้อง setIsLoading(false) ใน "try" เพราะ component จะ unmount
   };
 
   return (
@@ -65,6 +64,7 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -77,25 +77,18 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
-              {/* 🚨 ลบ Checkbox 'admin' ออกจากหน้า Login */}
-              {/*
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="admin"
-                  checked={isAdmin}
-                  onChange={(e) => setIsAdmin(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="admin" className="cursor-pointer">เข้าสู่ระบบในฐานะผู้ดูแลระบบ</Label>
-              </div>
-              */}
+              {error && (
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+                  {error}
+                </div>
+              )}
 
-              <Button type="submit" className="w-full">
-                เข้าสู่ระบบ
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'กำลังโหลด...' : 'เข้าสู่ระบบ'}
               </Button>
             </form>
 
@@ -111,15 +104,23 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
                 </button>
               </p>
             </div>
-
-            {/*
-            <div className="mt-4 text-center text-sm text-gray-600">
-              <p>สำหรับทดสอบ: ใช้อีเมลและรหัสผ่านใดก็ได้</p>
-            </div>
-            */}
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
+// ฟังก์ชันช่วยแปล Error Code
+const getFirebaseErrorMessage = (code: string) => {
+  switch (code) {
+    case 'auth/invalid-credential':
+      return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    case 'auth/user-not-found':
+      return 'ไม่พบผู้ใช้นี้';
+    case 'auth/wrong-password':
+      return 'รหัสผ่านไม่ถูกต้อง';
+    default:
+      return 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+  }
+};

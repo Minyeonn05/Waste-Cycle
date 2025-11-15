@@ -15,17 +15,17 @@
     "isolatedModules": true,
     "noEmit": true,
 
-    /* 🚨 นี่คือบรรทัดที่แก้ปัญหาของคุณ 🚨 */
+    /* 🚨 นี่คือบรรทัดที่แก้ปัญหา "Cannot use JSX" ครับ 🚨 */
     "jsx": "react-jsx",
 
-    /* 🚨 และเพิ่มส่วนนี้เพื่อให้แน่ใจว่ามันอ่านไฟล์ใน src 🚨 */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   
-  /* 🚨 และเพิ่มส่วนนี้เพื่อบอกว่าไฟล์ .tsx อยู่ที่ไหน 🚨 */
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  /* 🚨 บอกให้สแกนไฟล์ใน src 🚨 */
+  "include": ["src"]
+  
+  /* 🚨 ผมลบ "references" ที่ทำให้เกิด Error ออกไปแล้ว 🚨 */
 }

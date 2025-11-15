@@ -1,98 +1,96 @@
 // server/src/controllers/userController.js
-import admin, { db } from '../config/firebaseConfig.js';
+import { db } from '../config/firebaseConfig.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 
-// 🚨 1. สร้าง: ฟังก์ชันสร้างโปรไฟล์
-export const createUserProfile = asyncHandler(async (req, res) => {
-  console.log('--- 1. Inside createUserProfile ---');
-  
+const usersCollection = db.collection('users');
+
+/**
+ * @desc    Create or Update user profile (API-16)
+ * @route   POST /api/users/profile
+ * @access  Private
+ */
+export const createProfile = asyncHandler(async (req, res, next) => {
   const { name, farmName, role } = req.body;
-  
-  if (!req.user || !req.user.uid) {
-     console.error('❌ CRITICAL: req.user or req.user.uid is missing!');
-     return res.status(500).json({ 
-       success: false, 
-       error: 'User data not found after authentication' 
-     });
-  }
-  
-  const { uid, email } = req.user;
-  console.log(`User data from middleware: ${email} (${uid})`);
 
-  const userProfile = {
-    uid: uid,
-    email: email,
+  if (!name) {
+    return res.status(400).json({ success: false, error: 'กรุณาระบุชื่อ' });
+  }
+
+  // ข้อมูลโปรไฟล์ (อ้างอิงจาก App.tsx)
+  const newProfile = {
+    uid: req.user.uid,
+    email: req.user.email,
     name: name,
-    farmName: farmName || null,
     role: role || 'user',
-    createdAt: new Date().toISOString(),
+    farmName: farmName || '',
     verified: false,
-  };
-  
-  console.log('--- 2. Saving profile to Firestore ---');
-  await db.collection('users').doc(uid).set(userProfile);
-  console.log('--- 3. Profile saved to Firestore ---');
-
-  // 🚨 🚨🚨
-  // 🚨 ยืนยันว่าส่วนนี้ "ปิด" อยู่ (มี // ข้างหน้า)
-  // await admin.auth().setCustomUserClaims(uid, { role: userProfile.role });
-  // 🚨 🚨🚨
-
-  console.log(`✅ Profile created for: ${email} (UID: ${uid})`);
-  res.status(201).json({ success: true, user: userProfile });
-});
-
-
-// 🚨 2. ดึงข้อมูลโปรไฟล์ตัวเอง
-export const getMyProfile = asyncHandler(async (req, res) => {
-  const { uid } = req.user; 
-  const userDoc = await db.collection('users').doc(uid).get();
-
-  if (!userDoc.exists) {
-    return res.status(404).json({ success: false, error: 'User profile not found' });
-  }
-  res.status(200).json({ success: true, user: userDoc.data() });
-});
-
-// 🚨 3. ดึงโปรไฟล์คนอื่น
-export const getUserById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const userDoc = await db.collection('users').doc(id).get();
-  
-  if (!userDoc.exists) {
-    return res.status(404).json({ success: false, error: 'User profile not found' });
-  }
-  res.status(200).json({ success: true, user: userDoc.data() });
-});
-
-// 🚨 4. อัปเดตโปรไฟล์
-export const updateUserProfile = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { uid: authUserId, role: authUserRole } = req.user; 
-  
-  if (id !== authUserId && authUserRole !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Unauthorized to update this profile' });
-  }
-  
-  const { name, farmName, description, photoURL } = req.body;
-  const userRef = db.collection('users').doc(id);
-  const doc = await userRef.get();
-  
-  if (!doc.exists) {
-    return res.status(404).json({ success: false, error: 'User profile not found' });
-  }
-  
-  const updateData = {
-    name,
-    farmName: farmName || null,
-    description: description || '',
-    photoURL: photoURL || null,
-    updatedAt: new Date().toISOString(),
+    photoURL: req.user.photoURL || null,
+    createdAt: new Date().toISOString(),
   };
 
-  await userRef.update(updateData);
-  const updatedDoc = await userRef.get();
+  // ใช้ .set() แทน .add() เพื่อให้แน่ใจว่าเป็นการสร้าง/ทับที่ UID เดิม
+  await usersCollection.doc(req.user.uid).set(newProfile);
   
-  console.log(`✅ Profile updated for: ${updatedDoc.data().email} (UID: ${id})`);
-  res.status(200).json({ success: true, user: updatedDoc.data() });
+  res.status(201).json({
+    success: true,
+    data: newProfile
+  });
+});
+
+/**
+ * @desc    Get current user profile (API-17)
+ * @route   GET /api/users/profile
+ * @access  Private
+ */
+export const getMe = asyncHandler(async (req, res, next) => {
+  const userDocRef = usersCollection.doc(req.user.uid);
+  const userDoc = await userDocRef.get();
+
+  if (!userDoc.exists) {
+    // 🚨 [แก้ไข] 👈 นี่คือจุดที่แก้ปัญหา 🚨
+    // ถ้า User มี Auth (req.user) แต่ไม่มี Profile ใน DB... ให้สร้างเลย
+    console.warn(`[getMe] User ${req.user.uid} not found in Firestore. Creating new profile...`);
+    
+    // ดึงข้อมูลพื้นฐานจาก Token (ที่ middleware ส่งมา)
+    const newProfile = {
+      uid: req.user.uid,
+      email: req.user.email,
+      name: req.user.displayName || req.user.email.split('@')[0] || 'New User',
+      role: req.user.role || 'user',
+      farmName: '',
+      verified: false,
+      photoURL: req.user.photoURL || null,
+      createdAt: new Date().toISOString(),
+    };
+
+    // สร้างโปรไฟล์ใหม่ใน Firestore
+    await userDocRef.set(newProfile);
+
+    // ส่งโปรไฟล์ใหม่นี้กลับไปให้ Client
+    res.status(200).json({
+      success: true,
+      data: newProfile
+    });
+
+  } else {
+    // 🚨 (ของเดิม) ถ้า User มี Profile อยู่แล้ว ก็ส่งกลับไปปกติ
+    res.status(200).json({
+      success: true,
+      data: userDoc.data()
+    });
+  }
+});
+
+/**
+ * @desc    Get all users (Admin only)
+ * @route   GET /api/users
+ * @access  Private/Admin
+ */
+export const getAllUsers = asyncHandler(async (req, res, next) => {
+  const snapshot = await usersCollection.get();
+  const users = [];
+  snapshot.forEach(doc => {
+    users.push({ id: doc.id, ...doc.data() });
+  });
+  res.status(200).json({ success: true, count: users.length, data: users });
 });

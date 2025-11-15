@@ -10,15 +10,15 @@ import {
   createPost,
   updatePost,
   deletePost
-} from './apiServer'; // 👈 [แก้ไข] Import API ทั้งหมด
+} from './apiServer'; 
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
 import { Dashboard } from './components/Dashboard';
-import { CreatePost } from './components/CreatePost'; // 👈 [เพิ่ม]
+import { CreatePost } from './components/CreatePost'; 
 import { Toaster, toast } from 'sonner';
 
-// 🚨 [ย้ายมาที่นี่] 👈 ย้าย Types มาที่นี่เพื่อให้ Import ง่าย
+// 🚨 (Types ทั้งหมดถูกต้องจากครั้งที่แล้ว) 🚨
 export interface User {
   uid: string;
   email: string;
@@ -28,13 +28,11 @@ export interface User {
   verified?: boolean;
   photoURL?: string;
 }
-
 export interface ProfileFormData {
   name: string;
   farmName?: string;
   role: 'user' | 'admin';
 }
-
 export interface Post {
   id: string;
   userId: string;
@@ -55,34 +53,33 @@ export interface Post {
   contactPhone: string;
   rating?: number;
   reviewCount?: number;
+  sold?: boolean; 
 }
-
-// 🚨 [แก้ไข] 👈 เพิ่มหน้าสำหรับ Post
 export type Page =
   | 'landing'
   | 'login'
   | 'register'
   | 'app' // (คือ Dashboard)
-  | 'create-post' // 👈 [เพิ่ม]
-  | 'edit-post' // 👈 [เพิ่ม]
+  | 'create-post' 
+  | 'edit-post' 
   | 'loading';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('loading');
   const [user, setUser] = useState<User | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]); // 👈 [เพิ่ม]
-  const [editingPost, setEditingPost] = useState<Post | undefined>(undefined); // 👈 [เพิ่ม]
+  const [posts, setPosts] = useState<Post[]>([]); 
+  const [editingPost, setEditingPost] = useState<Post | undefined>(undefined); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // 🚨 [เพิ่ม] 👈 ฟังก์ชันดึงโพสต์
+  
   const fetchPosts = useCallback(async () => {
-    if (!auth.currentUser) return; // ต้อง Login ก่อน
+    if (!auth.currentUser) return; 
     setIsLoading(true);
     try {
-      const response = await getPosts(); // (เรียก API)
-      setPosts(response.data.data || []); // 👈 (แก้ path ตาม API response)
+      const response = await getPosts(); 
+      setPosts(response.data.data || []); 
     } catch (err: any) {
       console.error("Failed to fetch posts:", err);
       toast.error('ไม่สามารถดึงข้อมูลโพสต์ได้');
@@ -91,7 +88,7 @@ function App() {
     }
   }, []);
 
-  // [แก้ไข] useEffect (onAuthStateChanged)
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -100,12 +97,15 @@ function App() {
           setAuthToken(token);
 
           const response = await getMyProfile();
-          const profile = response.data.user;
+          
+          // 🚨 [แก้ไขจุดที่ 1] 👈
+          // (ลบ .user ออก เพราะ data คือ User แล้ว)
+          const profile = response.data.data; 
 
           setUser(profile);
           setCurrentPage('app');
 
-          await fetchPosts(); // 👈 [เพิ่ม] ดึงโพสต์หลังจาก Login
+          await fetchPosts(); 
 
         } catch (err: any) {
           console.error("Auth state change error:", err);
@@ -117,7 +117,7 @@ function App() {
       } else {
         setAuthToken(null);
         setUser(null);
-        setPosts([]); // 👈 [เพิ่ม] ล้างโพสต์เมื่อ Logout
+        setPosts([]); 
         setCurrentPage('landing');
       }
       setIsLoading(false);
@@ -125,11 +125,10 @@ function App() {
     });
 
     return () => unsubscribe();
-  }, [fetchPosts]); // 👈 [เพิ่ม] dependency
+  }, [fetchPosts]); 
 
   const handleLogout = useCallback(() => {
     auth.signOut();
-    // (State อื่นๆ จะถูกล้างโดย onAuthStateChanged)
     toast.success('ออกจากระบบสำเร็จ');
   }, []);
 
@@ -137,11 +136,11 @@ function App() {
     setIsLoading(true);
     setError(null);
     try {
-      // ขั้นตอนที่ 1: เรียก API สร้างโปรไฟล์
       const response = await createProfile(profileData);
 
-      // ขั้นตอนที่ 2: ดึงข้อมูล User ที่เพิ่งสร้างเสร็จ
-      const createdUser = response.data.user;
+      // 🚨 [แก้ไขจุดที่ 2] 👈
+      // (ลบ .user ออก เพราะ data คือ User แล้ว)
+      const createdUser = response.data.data; 
       setUser(createdUser);
       setCurrentPage('app');
       toast.success(`ยินดีต้อนรับ, ${createdUser.name}!`);
@@ -152,21 +151,20 @@ function App() {
       setError(errorMsg);
       toast.error(errorMsg);
       
-      auth.signOut(); // 👈 ล็อกเอาท์ ถ้าสร้างโปรไฟล์ไม่สำเร็จ
+      auth.signOut(); 
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 🚨 [เพิ่ม] 👈 ฟังก์ชันสำหรับ CRUD Posts (ที่ CreatePost.tsx จะเรียก)
-
+  // 🚨 (ฟังก์ชัน CRUD ทั้งหมดถูกต้อง ไม่ต้องแก้) 🚨
   const handleCreatePost = async (postData: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => {
     setIsLoading(true);
     try {
-      await createPost(postData); // (เรียก API)
+      await createPost(postData); 
       toast.success('สร้างโพสต์สำเร็จ!');
-      await fetchPosts(); // ดึงข้อมูลใหม่
-      setCurrentPage('app'); // กลับไปหน้า Dashboard
+      await fetchPosts(); 
+      setCurrentPage('app'); 
     } catch (err: any) {
       console.error("Create post failed:", err);
       toast.error(err.response?.data?.error || 'สร้างโพสต์ไม่สำเร็จ');
@@ -178,10 +176,10 @@ function App() {
   const handleUpdatePost = async (postId: string, updatedData: Partial<Post>) => {
     setIsLoading(true);
     try {
-      await updatePost(postId, updatedData); // (เรียก API)
+      await updatePost(postId, updatedData); 
       toast.success('อัปเดตโพสต์สำเร็จ!');
-      await fetchPosts(); // ดึงข้อมูลใหม่
-      setCurrentPage('app'); // กลับไปหน้า Dashboard
+      await fetchPosts(); 
+      setCurrentPage('app'); 
       setEditingPost(undefined);
     } catch (err: any) {
       console.error("Update post failed:", err);
@@ -196,10 +194,9 @@ function App() {
 
     setIsLoading(true);
     try {
-      await deletePost(postId); // (เรียก API)
+      await deletePost(postId); 
       toast.success('ลบโพสต์สำเร็จ');
-      await fetchPosts(); // ดึงข้อมูลใหม่ (หรือ filter ออกจาก state)
-      // setPosts(posts.filter(p => p.id !== postId)); (เร็วกว่า แต่ fetch ดีกว่า)
+      await fetchPosts(); 
     } catch (err: any) {
       console.error("Delete post failed:", err);
       toast.error(err.response?.data?.error || 'ลบโพสต์ไม่สำเร็จ');
@@ -208,7 +205,6 @@ function App() {
     }
   };
 
-  // 🚨 [เพิ่ม] 👈 ฟังก์ชันสำหรับ Navigation
   const navigateTo = (page: Page) => {
     setCurrentPage(page);
   };
@@ -218,6 +214,7 @@ function App() {
     setCurrentPage('edit-post');
   };
 
+  // 🚨 (Routing ทั้งหมดถูกต้อง ไม่ต้องแก้) 🚨
   if (!authChecked || (isLoading && currentPage === 'loading')) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -226,8 +223,6 @@ function App() {
     );
   }
 
-  // 🚨 [แก้ไข] 👈 การ Render หน้า (Routing)
-
   if (currentPage === 'app' && user) {
     return (
       <>
@@ -235,7 +230,6 @@ function App() {
         <Dashboard
           user={user}
           onLogout={handleLogout}
-          // 🚨 [เพิ่ม] 👈 ส่ง State และ Actions ไปให้ Dashboard
           posts={posts} 
           onNavigate={navigateTo} 
           onEditPost={navigateToEdit} 
@@ -245,7 +239,6 @@ function App() {
     );
   }
 
-  // 🚨 [เพิ่ม] 👈 หน้าสร้างและแก้ไขโพสต์
   if ((currentPage === 'create-post' || currentPage === 'edit-post') && user) {
     return (
       <>
@@ -286,7 +279,6 @@ function App() {
     );
   }
 
-  // (หน้า Landing)
   return (
     <>
       <Toaster position="top-right" richColors />

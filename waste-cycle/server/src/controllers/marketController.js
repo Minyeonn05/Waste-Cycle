@@ -1,49 +1,67 @@
-// server/src/controllers/marketController.js
+import asyncHandler from '../middleware/asyncHandler.js';
 import { db } from '../config/firebaseConfig.js';
-import asyncHandler from '../middleware/asyncHandler.js'; // 👈 [เพิ่ม]
 
-const pricesCollection = db.collection('market_prices');
+// @desc    Search marketplace
+// @route   GET /api/market/search
+// @access  Public
+const searchMarket = asyncHandler(async (req, res) => {
+  const { q, wasteType, location, sortBy, order = 'desc' } = req.query;
 
-// API-19
-export const getMarketPrices = asyncHandler(async (req, res, next) => {
-  const snapshot = await pricesCollection.orderBy('lastUpdated', 'desc').get();
+  let query = db.collection('products').where('status', '==', 'available');
+
+  if (wasteType) {
+    query = query.where('wasteType', '==', wasteType);
+  }
+  if (q) {
+    // Firestore doesn't support full-text search natively.
+    // This is a very simple "startsWith" search.
+    // For real search, use Algolia or another search service.
+    query = query.where('title', '>=', q).where('title', '<=', q + '\uf8ff');
+  }
   
-  if (snapshot.empty) {
-    // 🚨 [แก้ไข]
-    return res.status(404).json({ success: false, error: 'ไม่พบข้อมูลราคาตลาด' });
+  if (sortBy) {
+    query = query.orderBy(sortBy, order);
+  } else {
+    query = query.orderBy('createdAt', 'desc');
   }
 
-  const prices = [];
-  snapshot.forEach(doc => {
-    prices.push({ id: doc.id, ...doc.data() });
-  });
+  const productsSnapshot = await query.get();
+  const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-  res.json({ success: true, data: prices });
+  res.status(200).json({ success: true, data: products });
 });
 
-// API-20
-export const updateMarketPrice = asyncHandler(async (req, res, next) => {
-  const { name, unit, price } = req.body;
+// @desc    Get product details
+// @route   GET /api/market/product/:id
+// @access  Public
+const getProductDetails = asyncHandler(async (req, res) => {
+  const productId = req.params.id;
+  const productDoc = await db.collection('products').doc(productId).get();
 
-  if (!name || !unit || price === undefined) {
-    // 🚨 [แก้ไข]
-    return res.status(400).json({ success: false, error: 'กรุณาระบุชื่อ, หน่วย, และราคา' });
+  if (!productDoc.exists) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+  
+  const productData = productDoc.data();
+  
+  // Get seller info
+  const sellerDoc = await db.collection('users').doc(productData.userId).get();
+  let sellerInfo = null;
+  if(sellerDoc.exists) {
+    const seller = sellerDoc.data();
+    sellerInfo = {
+      name: seller.name,
+      farmName: seller.farmName,
+      avatar: seller.avatar,
+      verified: seller.verified,
+    };
   }
 
-  const priceId = name.replace(/\s+/g, '_').toLowerCase();
-  
-  const priceData = {
-    name: name,
-    unit: unit,
-    price: parseFloat(price),
-    lastUpdated: new Date().toISOString()
-  };
-
-  await pricesCollection.doc(priceId).set(priceData, { merge: true });
-
-  res.status(201).json({ 
-    success: true, 
-    message: 'อัปเดตราคาตลาดสำเร็จ', // 🚨 [แก้ไข]
-    data: priceData 
-  });
+  res.status(200).json({ success: true, data: { id: productDoc.id, ...productData, seller: sellerInfo } });
 });
+
+export {
+  searchMarket,
+  getProductDetails
+};

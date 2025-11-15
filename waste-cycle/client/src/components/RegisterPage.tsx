@@ -1,13 +1,9 @@
-// client/src/components/RegisterPage.tsx
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Recycle } from 'lucide-react';
-import { auth } from '../firebaseConfig';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { setAuthToken } from '../apiServer'; 
+import { Button } from './ui/button.tsx';
+import { Input } from './ui/input.tsx';
+import { Label } from './ui/label.tsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card.tsx';
+import { Recycle, ArrowLeft } from 'lucide-react';
 
 interface ProfileFormData {
   name: string;
@@ -16,12 +12,20 @@ interface ProfileFormData {
 }
 
 interface RegisterPageProps {
-  onRegisterSuccess: (data: ProfileFormData) => void; 
+  onRegister: (
+    email: string,
+    password: string,
+    profileData: ProfileFormData
+  ) => Promise<void>;
   onBack: () => void;
   onLoginClick: () => void;
 }
 
-export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: RegisterPageProps) {
+export function RegisterPage({
+  onRegister,
+  onBack,
+  onLoginClick,
+}: RegisterPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +38,7 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (password !== confirmPassword) {
       setError('รหัสผ่านไม่ตรงกัน');
       return;
@@ -42,23 +46,16 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
 
     setIsLoading(true);
 
-    try {
-      // 1: สร้าง User ใน Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // 2: ขอ Token และตั้งค่าทันที
-      const token = await userCredential.user.getIdToken();
-      setAuthToken(token); 
+    const profileData: ProfileFormData = {
+      name,
+      farmName: isAdmin ? undefined : farmName.trim() || undefined,
+      role: isAdmin ? 'admin' : 'user',
+    };
 
-      // 3: ส่งข้อมูลโปรไฟล์กลับไป App.tsx
-      onRegisterSuccess({
-        name,
-        farmName: isAdmin ? undefined : (farmName.trim() || undefined),
-        role: isAdmin ? 'admin' : 'user',
-      });
-      
+    try {
+      await onRegister(email, password, profileData);
     } catch (err: any) {
-      console.error("Firebase Register failed:", err.code);
+      console.error('Firebase Register failed:', err.code, err.message);
       setError(getFirebaseErrorMessage(err.code));
       setIsLoading(false);
     }
@@ -67,18 +64,22 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
+        <Button variant="ghost" onClick={onBack} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" /> กลับ
+        </Button>
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <Recycle className="w-12 h-12 text-green-600" />
             </div>
             <CardTitle>ลงทะเบียน Waste-Cycle</CardTitle>
-            <CardDescription>สร้างบัญชีเพื่อเริ่มซื้อและขายของเสีย</CardDescription>
+            <CardDescription>
+              สร้างบัญชีเพื่อเริ่มซื้อและขายของเสีย
+            </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
-              {/* (Input fields: name, email, password, etc.) */}
               <div className="space-y-2">
                 <Label htmlFor="name">ชื่อ-นามสกุล</Label>
                 <Input
@@ -110,7 +111,7 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="•••••••• (อย่างน้อย 6 ตัวอักษร)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -135,11 +136,11 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
 
               {!isAdmin && (
                 <div className="space-y-2">
-                  <Label htmlFor="farmName">ชื่อฟาร์ม</Label>
+                  <Label htmlFor="farmName">ชื่อฟาร์ม (ไม่บังคับ)</Label>
                   <Input
                     id="farmName"
                     type="text"
-                    placeholder="ฟาร์มของฉัน (ไม่บังคับ)"
+                    placeholder="ฟาร์มของฉัน"
                     value={farmName}
                     onChange={(e) => setFarmName(e.target.value)}
                     disabled={isLoading}
@@ -156,7 +157,9 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
                   className="rounded"
                   disabled={isLoading}
                 />
-                <Label htmlFor="admin" className="cursor-pointer">ลงทะเบียนในฐานะผู้ดูแลระบบ</Label>
+                <Label htmlFor="admin" className="cursor-pointer">
+                  ลงทะเบียนในฐานะผู้ดูแลระบบ
+                </Label>
               </div>
 
               {error && (
@@ -189,7 +192,6 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
   );
 }
 
-// ... (getFirebaseErrorMessage function) ...
 const getFirebaseErrorMessage = (code: string) => {
   switch (code) {
     case 'auth/email-already-in-use':

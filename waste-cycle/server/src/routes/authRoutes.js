@@ -1,10 +1,36 @@
-// server/src/routes/authRoutes.js
 import express from 'express';
+import { register, login, logout } from '../controllers/authController.js';
+import { validateEmail, validatePassword } from '../utils/validation.js';
+import asyncHandler from '../middleware/asyncHandler.js';
+
 const router = express.Router();
 
-// 🚨 เราจงใจลบ routes /register, /login, /status ออกทั้งหมด
-// routes เหล่านี้ถูกแทนที่ด้วย:
-// 1. Firebase Client SDK (สำหรับ Login/Register)
-// 2. /api/users/profile (สำหรับสร้างและดึงข้อมูล User)
+// Middleware to use validation functions
+const validateRegistration = asyncHandler(async (req, res, next) => {
+  const { email, password } = req.body;
+  if (!validateEmail(email)) {
+    res.status(400);
+    throw new Error('Invalid email format');
+  }
+  if (!validatePassword(password)) {
+    res.status(400);
+    throw new Error('Password must be at least 6 characters');
+  }
+  next();
+});
+
+const validateLogin = asyncHandler(async (req, res, next) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    res.status(400);
+    throw new Error('Please provide email and password');
+  }
+  next();
+});
+
+
+router.post('/register', validateRegistration, register);
+router.post('/login', validateLogin, login);
+router.post('/logout', logout);
 
 export default router;

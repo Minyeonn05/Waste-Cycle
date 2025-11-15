@@ -1,98 +1,150 @@
-// server/src/controllers/userController.js
-import admin, { db } from '../config/firebaseConfig.js';
 import asyncHandler from '../middleware/asyncHandler.js';
+import { db, auth } from '../config/firebaseConfig.js';
 
-// 🚨 1. สร้าง: ฟังก์ชันสร้างโปรไฟล์
-export const createUserProfile = asyncHandler(async (req, res) => {
-  console.log('--- 1. Inside createUserProfile ---');
-  
+const getUserProfile = asyncHandler(async (req, res) => {
+  const user = req.user; 
+  if (user) {
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        uid: user.uid,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        farmName: user.farmName || '',
+        location: user.location || null,
+        verified: user.verified || false,
+        avatar: user.avatar || '',
+      },
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+const createUserProfile = asyncHandler(async (req, res) => {
   const { name, farmName, role } = req.body;
-  
-  if (!req.user || !req.user.uid) {
-     console.error('❌ CRITICAL: req.user or req.user.uid is missing!');
-     return res.status(500).json({ 
-       success: false, 
-       error: 'User data not found after authentication' 
-     });
+  const user = req.user;
+
+  if (!user) {
+    res.status(401);
+    throw new Error('Not authorized');
   }
-  
-  const { uid, email } = req.user;
-  console.log(`User data from middleware: ${email} (${uid})`);
 
-  const userProfile = {
-    uid: uid,
-    email: email,
-    name: name,
-    farmName: farmName || null,
-    role: role || 'user',
-    createdAt: new Date().toISOString(),
-    verified: false,
-  };
-  
-  console.log('--- 2. Saving profile to Firestore ---');
-  await db.collection('users').doc(uid).set(userProfile);
-  console.log('--- 3. Profile saved to Firestore ---');
+  const userRef = db.collection('users').doc(user.uid);
+  const userDoc = await userRef.get();
 
-  // 🚨 🚨🚨
-  // 🚨 ยืนยันว่าส่วนนี้ "ปิด" อยู่ (มี // ข้างหน้า)
-  // await admin.auth().setCustomUserClaims(uid, { role: userProfile.role });
-  // 🚨 🚨🚨
-
-  console.log(`✅ Profile created for: ${email} (UID: ${uid})`);
-  res.status(201).json({ success: true, user: userProfile });
-});
-
-
-// 🚨 2. ดึงข้อมูลโปรไฟล์ตัวเอง
-export const getMyProfile = asyncHandler(async (req, res) => {
-  const { uid } = req.user; 
-  const userDoc = await db.collection('users').doc(uid).get();
-
-  if (!userDoc.exists) {
-    return res.status(404).json({ success: false, error: 'User profile not found' });
+  if (userDoc.exists) {
+    res.status(400);
+    throw new Error('User profile already exists');
   }
-  res.status(200).json({ success: true, user: userDoc.data() });
-});
 
-// 🚨 3. ดึงโปรไฟล์คนอื่น
-export const getUserById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const userDoc = await db.collection('users').doc(id).get();
-  
-  if (!userDoc.exists) {
-    return res.status(404).json({ success: false, error: 'User profile not found' });
-  }
-  res.status(200).json({ success: true, user: userDoc.data() });
-});
-
-// 🚨 4. อัปเดตโปรไฟล์
-export const updateUserProfile = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { uid: authUserId, role: authUserRole } = req.user; 
-  
-  if (id !== authUserId && authUserRole !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Unauthorized to update this profile' });
-  }
-  
-  const { name, farmName, description, photoURL } = req.body;
-  const userRef = db.collection('users').doc(id);
-  const doc = await userRef.get();
-  
-  if (!doc.exists) {
-    return res.status(404).json({ success: false, error: 'User profile not found' });
-  }
-  
-  const updateData = {
+  const newUserProfile = {
+    uid: user.uid,
+    email: user.email, 
     name,
-    farmName: farmName || null,
-    description: description || '',
-    photoURL: photoURL || null,
+    farmName: farmName || '',
+    role: role || 'user',
+    verified: false,
+    createdAt: new Date().toISOString(),
+  };
+
+  await userRef.set(newUserProfile);
+
+  res.status(201).json({
+    success: true,
+    user: {
+      id: user.uid,
+      ...newUserProfile,
+    },
+  });
+});
+
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const { name, farmName, location } = req.body;
+  const user = req.user;
+
+  if (!user) {
+    res.status(401);
+    throw new Error('Not authorized');
+  }
+
+  const userRef = db.collection('users').doc(user.uid);
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    res.status(44);
+    throw new Error('User profile not found');
+  }
+
+  const updatedProfile = {
+    name: name || userDoc.data().name,
+    farmName: farmName || userDoc.data().farmName,
+    location: location || userDoc.data().location,
     updatedAt: new Date().toISOString(),
   };
 
-  await userRef.update(updateData);
-  const updatedDoc = await userRef.get();
-  
-  console.log(`✅ Profile updated for: ${updatedDoc.data().email} (UID: ${id})`);
-  res.status(200).json({ success: true, user: updatedDoc.data() });
+  await userRef.update(updatedProfile);
+  const newDoc = await userRef.get();
+
+  res.status(200).json({
+    success: true,
+    user: newDoc.data(),
+  });
 });
+
+const getAllUsers = asyncHandler(async (req, res) => {
+  const usersSnapshot = await db.collection('users').get();
+  const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  res.status(200).json({ success: true, count: users.length, users });
+});
+
+const getUserById = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  const userDoc = await db.collection('users').doc(userId).get();
+
+  if (userDoc.exists) {
+    res.status(200).json({ success: true, user: { id: userDoc.id, ...userDoc.data() } });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+const updateUserRole = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  const { role } = req.body;
+
+  if (!role) {
+    res.status(400);
+    throw new Error('Role is required');
+  }
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({ role });
+
+  await auth.setCustomUserClaims(userId, { role });
+
+  res.status(200).json({ success: true, message: 'User role updated' });
+});
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  await db.collection('users').doc(userId).delete();
+  await auth.deleteUser(userId);
+
+  res.status(200).json({ success: true, message: 'User deleted' });
+});
+
+export {
+  getUserProfile,
+  createUserProfile,
+  updateUserProfile,
+  getAllUsers,
+  getUserById,
+  updateUserRole,
+  deleteUser,
+};

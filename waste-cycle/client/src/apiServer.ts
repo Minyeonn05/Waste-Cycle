@@ -1,5 +1,19 @@
-// client/src/apiService.ts
 import axios from 'axios';
+import {
+  initializeApp,
+  type FirebaseApp,
+  type FirebaseOptions,
+} from 'firebase/app';
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  type Auth,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import app from './firebaseConfig';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -7,7 +21,8 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
-// ฟังก์ชันสำหรับตั้งค่า Token ใน Header
+const auth = getAuth(app);
+
 export const setAuthToken = (token: string | null) => {
   if (token) {
     localStorage.setItem('authToken', token);
@@ -18,25 +33,90 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
-// 🚨 1. เปลี่ยนชื่อฟังก์ชันให้สอดคล้องกัน (getAuthStatus -> getMyProfile)
-// (เราจะเปลี่ยนชื่อที่ Backend ด้วย)
+export const loginUser = (email: string, password: string) => {
+  return signInWithEmailAndPassword(auth, email, password);
+};
+
+export const registerUser = (email: string, password: string) => {
+  return createUserWithEmailAndPassword(auth, email, password);
+};
+
+export const logoutUser = () => {
+  return signOut(auth);
+};
+
+export const onAuthChange = (callback: (user: FirebaseUser | null) => void) => {
+  return onAuthStateChanged(auth, callback);
+};
+
 export const getMyProfile = () => {
-  return api.get('/users/profile'); // <-- เปลี่ยน URL
+  return api.get('/users/profile');
 };
 
-// 🚨 2. เพิ่มฟังก์ชันสำหรับ "สร้างโปรไฟล์" หลังจากสมัคร
-export const createProfile = (profileData: { name: string; farmName?: string; role: 'user' | 'admin' }) => {
-  return api.post('/users/profile', profileData); // <-- Endpoint ใหม่
+export const createProfile = (profileData: {
+  name: string;
+  farmName?: string;
+  role: 'user' | 'admin';
+}) => {
+  return api.post('/users/profile', profileData);
 };
 
-// --- Product Routes ---
-export const getPosts = () => {
+export const getProducts = () => {
   return api.get('/products');
 };
 
-// ... (ฟังก์ชัน API อื่นๆ) ...
+export const getProductById = (id: string) => {
+  return api.get(`/products/${id}`);
+};
 
-// ตรวจสอบ Token ตอนโหลดแอป
+export const createProduct = (productData: any) => {
+  return api.post('/products', productData);
+};
+
+export const updateProduct = (id: string, productData: any) => {
+  return api.put(`/products/${id}`, productData);
+};
+
+export const deleteProduct = (id: string) => {
+  return api.delete(`/products/${id}`);
+};
+
+export const getChatRooms = () => {
+  return api.get('/chat');
+};
+
+export const getChatMessages = (chatId: string) => {
+  return api.get(`/chat/${chatId}/messages`);
+};
+
+export const sendChatMessage = (chatId: string, text: string) => {
+  return api.post(`/chat/${chatId}/messages`, { text });
+};
+
+export const createChatRoom = (productId: string) => {
+  return api.post('/chat', { productId });
+};
+
+export const getUserBookings = (userId: string) => {
+  return api.get(`/bookings/user/${userId}`);
+};
+
+export const createBooking = (bookingData: any) => {
+  return api.post('/bookings', bookingData);
+};
+
+export const updateBookingStatus = (id: string, status: string) => {
+  return api.put(`/bookings/${id}/status`, { status });
+};
+
+export const getNotifications = () => {
+  return api.get('/notifications');
+};
+
+export const markNotificationAsRead = (id: string) => {
+  return api.put(`/notifications/${id}/read`);
+};
+
 const token = localStorage.getItem('authToken');
 if (token) {
   setAuthToken(token);

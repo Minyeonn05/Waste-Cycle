@@ -1,49 +1,36 @@
-// server/src/controllers/fertilizerController.js
-import { 
-  calculateFertilizerFormula, 
-  getSupportedMaterials, 
-  getSupportedCrops 
-} from '../utils/fertilizerCalculator.js';
-import asyncHandler from '../middleware/asyncHandler.js'; // 👈 [เพิ่ม]
+import asyncHandler from '../middleware/asyncHandler.js';
+import { calculateFertilizer } from '../utils/fertilizerCalculator.js';
 
-// คำนวณสูตรปุ๋ย NPK
-export const getFertilizerAdvice = asyncHandler(async (req, res, next) => {
-  const { cropType, area, materials } = req.body;
-  
-  if (!cropType || !area) {
-    // 🚨 [แก้ไข]
-    return res.status(400).json({ success: false, error: 'กรุณาระบุประเภทพืชและพื้นที่' });
-  }
-  if (area <= 0) {
-    // 🚨 [แก้ไข]
-    return res.status(400).json({ success: false, error: 'พื้นที่ต้องมากกว่า 0' });
-  }
-  
-  try {
-    const result = calculateFertilizerFormula(cropType, parseFloat(area), materials);
-    res.json({ success: true, data: result });
-  } catch (calcError) {
-    // นี่คือ Error จาก calculateFertilizerFormula (เช่น 'Unsupported crop type')
-    return res.status(400).json({ success: false, error: calcError.message });
-  }
+// @desc    Calculate NPK from waste
+// @route   POST /api/fertilizer/calculate
+// @access  Private
+const calculateNPK = asyncHandler(async (req, res) => {
+  const { wasteType, quantity, animalType, feedType } = req.body;
+
+  // This is a simplified example. Real logic should be in fertilizerCalculator.js
+  const npkResult = {
+    n: quantity * 0.5, // Example calculation
+    p: quantity * 0.2,
+    k: quantity * 0.3,
+  };
+
+  res.status(200).json({ success: true, data: npkResult });
 });
 
-// ดึงรายการวัสดุที่รองรับ
-export const getSupportedMaterialsList = asyncHandler(async (req, res, next) => {
-  const materials = getSupportedMaterials();
-  res.json({
-    success: true,
-    count: materials.length,
-    data: materials
-  });
+// @desc    Get fertilizer recommendation
+// @route   POST /api/fertilizer/recommend
+// @access  Private
+const getFertilizerRecommendation = asyncHandler(async (req, res) => {
+  const { cropType, area, soilType } = req.body;
+  const user = req.user;
+
+  // Example: Call the utility function
+  const recommendation = calculateFertilizer(cropType, area, soilType, user.availableWaste);
+
+  res.status(200).json({ success: true, data: recommendation });
 });
 
-// ดึงรายการพืชที่รองรับ
-export const getSupportedCropsList = asyncHandler(async (req, res, next) => {
-  const crops = getSupportedCrops();
-  res.json({
-    success: true,
-    count: crops.length,
-    data: crops
-  });
-});
+export {
+  calculateNPK,
+  getFertilizerRecommendation
+};

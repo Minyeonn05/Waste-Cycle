@@ -1,10 +1,9 @@
-// server/src/routes/analyzeRoutes.js
 import express from 'express';
-import { analyzeNPK } from '../controllers/analyzeController.js';
+import { analyzeWaste } from '../controllers/analyzeController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// API-18
-router.post('/npk', analyzeNPK);
+router.get('/waste', protect, analyzeWaste);
 
 export default router;

@@ -1,15 +1,13 @@
-// server/src/routes/matchingRoutes.js
 import express from 'express';
 import {
-  createMatching,
-  getRecommendations
+  findMatches,
+  acceptMatch,
 } from '../controllers/matchingController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes require authentication
-router.post('/', verifyToken, createMatching);
-router.get('/recommend/:userId', verifyToken, getRecommendations);
+router.post('/find', protect, findMatches);
+router.post('/accept', protect, acceptMatch);
 
 export default router;

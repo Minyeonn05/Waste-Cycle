@@ -1,10 +1,9 @@
-// server/src/routes/visualizationRoutes.js
 import express from 'express';
-import { getCycleData } from '../controllers/visualizationController.js';
+import { getWasteDataForViz } from '../controllers/visualizationController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// API-21
-router.get('/cycle', getCycleData);
+router.get('/waste-flow', getWasteDataForViz); // Public or private? Decided on public for now.
 
 export default router;

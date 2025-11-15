@@ -1,30 +1,29 @@
-// server/src/routes/userRoutes.js
 import express from 'express';
-import { 
-  createUserProfile, 
-  getMyProfile,
-  getUserById,       // 👈 1. Import ฟังก์ชันใหม่
-  updateUserProfile  // 👈 1. Import ฟังก์ชันใหม่
+import {
+  getUserProfile,
+  createUserProfile,
+  updateUserProfile,
+  getAllUsers,
+  getUserById,
+  updateUserRole,
+  deleteUser,
 } from '../controllers/userController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { admin } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// 🚨 Endpoint สำหรับสร้างโปรไฟล์ (หลังสมัคร)
-router.post('/profile', verifyToken, createUserProfile);
+router.route('/profile')
+  .get(protect, getUserProfile)
+  .post(protect, createUserProfile)
+  .put(protect, updateUserProfile);
 
-// 🚨 Endpoint สำหรับดึงข้อมูลโปรไฟล์ตัวเอง
-router.get('/profile', verifyToken, getMyProfile);
+router.route('/')
+  .get(protect, admin, getAllUsers);
 
-//
-// 🚀 --- Route ที่เพิ่มเข้ามา --- 🚀
-//
-
-// 🚨 Endpoint ดึงโปรไฟล์คนอื่น (Public)
-router.get('/:id', getUserById);
-
-// 🚨 Endpoint อัปเดตโปรไฟล์ (Private - ต้องเป็นเจ้าของ หรือ Admin)
-router.put('/:id', verifyToken, updateUserProfile);
-
+router.route('/:id')
+  .get(protect, admin, getUserById)
+  .put(protect, admin, updateUserRole)
+  .delete(protect, admin, deleteUser);
 
 export default router;

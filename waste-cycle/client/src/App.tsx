@@ -78,7 +78,8 @@ function App() {
     if (!auth.currentUser) return; 
     setIsLoading(true);
     try {
-      const response = await getPosts(); 
+      const response = await getPosts();
+      // 🚨 [แก้ไข] 👈 ต้องเข้าถึง .data (ที่มาจาก { success: true, data: ... })
       setPosts(response.data.data || []); 
     } catch (err: any) {
       console.error("Failed to fetch posts:", err);
@@ -98,8 +99,7 @@ function App() {
 
           const response = await getMyProfile();
           
-          // 🚨 [แก้ไขจุดที่ 1] 👈
-          // (ลบ .user ออก เพราะ data คือ User แล้ว)
+          // 🚨 [แก้ไข] 👈 ต้องเข้าถึง .data
           const profile = response.data.data; 
 
           setUser(profile);
@@ -138,8 +138,7 @@ function App() {
     try {
       const response = await createProfile(profileData);
 
-      // 🚨 [แก้ไขจุดที่ 2] 👈
-      // (ลบ .user ออก เพราะ data คือ User แล้ว)
+      // 🚨 [แก้ไข] 👈 ต้องเข้าถึง .data
       const createdUser = response.data.data; 
       setUser(createdUser);
       setCurrentPage('app');

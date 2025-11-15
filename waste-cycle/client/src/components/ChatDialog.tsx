@@ -12,7 +12,7 @@ interface ChatDialogProps {
 
 export function ChatDialog({ post, currentUser, onClose, onConfirm }: ChatDialogProps) {
   return (
-    <div className="fixed inset-0 bg-white bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">

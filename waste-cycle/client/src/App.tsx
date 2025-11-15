@@ -1,42 +1,35 @@
-// client/src/App.tsx
-import { useState, useEffect, useCallback } from 'react';
-import { auth } from './firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
-import {
-  setAuthToken,
-  createProfile,
-  getMyProfile,
-  getPosts,
-  createPost,
-  updatePost,
-  deletePost
-} from './apiServer'; 
+import { useState } from 'react';
+import { Header } from './components/Header';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
-import { RegisterPage } from './components/RegisterPage';
 import { Dashboard } from './components/Dashboard';
-import { CreatePost } from './components/CreatePost'; 
-import { Toaster, toast } from 'sonner';
+import { Marketplace } from './components/Marketplace';
+import { CreatePost } from './components/CreatePost';
+import { PostDetail } from './components/PostDetail';
+import { BookingPage } from './components/BookingPage';
+import { FertilizerAdvisor } from './components/FertilizerAdvisor';
+import { CircularEconomy } from './components/CircularEconomy';
+import { AdminPanel } from './components/AdminPanel';
+import { ChatPage } from './components/ChatPage';
+import { ProfilePage } from './components/ProfilePage';
+import { ChatDialog } from './components/ChatDialog';
 
-// 🚨 (Types ทั้งหมดถูกต้องจากครั้งที่แล้ว) 🚨
+export type UserRole = 'user' | 'admin';
+
 export interface User {
-  uid: string;
+  id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin';
+  role: UserRole;
   farmName?: string;
+  location?: { lat: number; lng: number };
   verified?: boolean;
-  photoURL?: string;
+  avatar?: string;
 }
-export interface ProfileFormData {
-  name: string;
-  farmName?: string;
-  role: 'user' | 'admin';
-}
+
 export interface Post {
   id: string;
   userId: string;
-  createdDate: string;
   title: string;
   animalType: string;
   wasteType: string;
@@ -50,243 +43,421 @@ export interface Post {
   feedType: string;
   description: string;
   images: string[];
+  farmName: string;
   contactPhone: string;
-  rating?: number;
-  reviewCount?: number;
-  sold?: boolean; 
+  rating: number;
+  reviewCount: number;
+  createdDate: string;
+  sold?: boolean;
 }
-export type Page =
-  | 'landing'
-  | 'login'
-  | 'register'
-  | 'app' // (คือ Dashboard)
-  | 'create-post' 
-  | 'edit-post' 
-  | 'loading';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('loading');
+export interface ChatRoom {
+  id: string;
+  postId: string;
+  sellerId: string;
+  buyerId: string;
+  sellerName: string;
+  buyerName: string;
+  farmName: string;
+  lastMessage: string;
+  timestamp: string;
+  unread: number;
+}
+
+export default function App() {
+  const [currentPage, setCurrentPage] = useState<string>('landing');
   const [user, setUser] = useState<User | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]); 
-  const [editingPost, setEditingPost] = useState<Post | undefined>(undefined); 
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
-
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [chatPostId, setChatPostId] = useState<string | null>(null);
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [confirmedChatRooms, setConfirmedChatRooms] = useState<Set<string>>(new Set());
+  const [chatMessages, setChatMessages] = useState<Record<string, { id: string; senderId: string; text: string; timestamp: string; }[]>>({});
   
-  const fetchPosts = useCallback(async () => {
-    if (!auth.currentUser) return; 
-    setIsLoading(true);
-    try {
-      const response = await getPosts();
-      // 🚨 [แก้ไข] 👈 ต้องเข้าถึง .data (ที่มาจาก { success: true, data: ... })
-      setPosts(response.data.data || []); 
-    } catch (err: any) {
-      console.error("Failed to fetch posts:", err);
-      toast.error('ไม่สามารถดึงข้อมูลโพสต์ได้');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // Posts state - includes all posts from all users
+  const [posts, setPosts] = useState<Post[]>([
+    {
+      id: '1',
+      userId: '1',
+      title: 'มูลไก่อินทรีย์',
+      animalType: 'ไก่ไข่',
+      wasteType: 'มูลแห้ง',
+      quantity: 500,
+      price: 320,
+      unit: 'กก. / สัปดาห์',
+      location: 'ฟาร์มไก่ไข่, ภูเก็ต',
+      distance: 4.2,
+      verified: true,
+      npk: { n: 3.5, p: 3.0, k: 1.8 },
+      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
+      description: 'มูลไก่คุณภาพดี เก็บจากฟาร์มที่มีการจัดการที่ดี ปราศจากเชื้อโรค',
+      images: ['https://images.unsplash.com/photo-1691526756635-0ac8703f5fa8?w=800'],
+      farmName: 'ฟาร์มของฉัน',
+      contactPhone: '081-234-5678',
+      rating: 4.8,
+      reviewCount: 24,
+      createdDate: '2024-11-10',
+    },
+    {
+      id: '2',
+      userId: '2',
+      title: 'มูลโคนมพร้อมใช้',
+      animalType: 'โคนม',
+      wasteType: 'มูลหมัก',
+      quantity: 2000,
+      price: 250,
+      unit: 'กก. / สัปดาห์',
+      location: 'ฟาร์มโคนม, สุรินทร์',
+      distance: 8.3,
+      verified: true,
+      npk: { n: 2.5, p: 1.8, k: 2.1 },
+      feedType: 'หญ้า/ฟาง',
+      description: 'มูลโคหมักพร้อมใช้ คุณภาพดี เหมาะสำหรับปลูกพืชทุกชนิด',
+      images: ['https://images.unsplash.com/photo-1723174515335-7eb28e74c0cb?w=800'],
+      farmName: 'ฟาร์มโคนมสุรินทร์',
+      contactPhone: '082-345-6789',
+      rating: 4.7,
+      reviewCount: 32,
+      createdDate: '2024-11-08',
+    },
+    {
+      id: '3',
+      userId: '3',
+      title: 'มูลสุกรหมัก',
+      animalType: 'สุกร',
+      wasteType: 'มูลหมัก',
+      quantity: 800,
+      price: 200,
+      unit: 'กก. / สัปดาห์',
+      location: 'ฟาร์มสุกร, นครปฐม',
+      distance: 15.7,
+      verified: true,
+      npk: { n: 3.8, p: 3.2, k: 2.4 },
+      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
+      description: 'มูลสุกรหมัก ผ่านกระบวนการหมักที่ถูกต้อง ไม่มีกลิ่น',
+      images: ['https://images.unsplash.com/photo-1674880785058-2c98aff0a62f?w=800'],
+      farmName: 'ฟาร์มสุกรนครปฐม',
+      contactPhone: '083-456-7890',
+      rating: 4.6,
+      reviewCount: 18,
+      createdDate: '2024-11-05',
+    },
+    {
+      id: '4',
+      userId: '4',
+      title: 'มูลเป็ดอินทรีย์',
+      animalType: 'เป็ด',
+      wasteType: 'มูลแห้ง',
+      quantity: 600,
+      price: 280,
+      unit: 'กก. / สัปดาห์',
+      location: 'ฟาร์มเป็ด, ราชบุรี',
+      distance: 12.5,
+      verified: true,
+      npk: { n: 3.2, p: 2.8, k: 1.6 },
+      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
+      description: 'มูลเป็ดคุณภาพดี เหมาะสำหรับพืชผักทุกชนิด มีธาตุอาหารสูง',
+      images: ['https://images.unsplash.com/photo-1663834780891-4cda88ea2794?w=800'],
+      farmName: 'ฟาร์มเป็ดราชบุรี',
+      contactPhone: '084-567-8901',
+      rating: 4.5,
+      reviewCount: 15,
+      createdDate: '2024-11-12',
+    },
+    {
+      id: '5',
+      userId: '5',
+      title: 'มูลแพะออร์แกนิค',
+      animalType: 'แพะ',
+      wasteType: 'มูลหมัก',
+      quantity: 400,
+      price: 350,
+      unit: 'กก. / สัปดาห์',
+      location: 'ฟาร์มแพะ, เพชรบุรี',
+      distance: 18.9,
+      verified: true,
+      npk: { n: 2.8, p: 2.0, k: 1.7 },
+      feedType: 'หญ้า/ฟาง',
+      description: 'มูลแพะหมักสุก เหมาะสำหรับพืชผักสวนครัว ไม่มีกลิ่น',
+      images: ['https://images.unsplash.com/photo-1723625449728-40e7a4d968e7?w=800'],
+      farmName: 'ฟาร์มแพะเพชรบุรี',
+      contactPhone: '085-678-9012',
+      rating: 4.9,
+      reviewCount: 21,
+      createdDate: '2024-11-11',
+    },
+    {
+      id: '6',
+      userId: '6',
+      title: 'มูลแกะคุณภาพพรีเมี่ยม',
+      animalType: 'แกะ',
+      wasteType: 'มูลหมัก',
+      quantity: 350,
+      price: 380,
+      unit: 'กก. / สัปดาห์',
+      location: 'ฟาร์มแกะ, กาญจนบุรี',
+      distance: 22.3,
+      verified: true,
+      npk: { n: 3.0, p: 2.2, k: 1.8 },
+      feedType: 'หญ้า/ฟาง',
+      description: 'มูลแกะพรีเมี่ยม หมักสุก อุดมด้วยธาตุอาหาร เหมาะกับไม้ดอกไม้ประดับ',
+      images: ['https://images.unsplash.com/photo-1681154258782-d9c41ae2d6da?w=800'],
+      farmName: 'ฟาร์มแกะกาญจนบุรี',
+      contactPhone: '086-789-0123',
+      rating: 4.8,
+      reviewCount: 19,
+      createdDate: '2024-11-09',
+    },
+    {
+      id: '7',
+      userId: '7',
+      title: 'มูลกระบือหมักสุก',
+      animalType: 'กระบือ',
+      wasteType: 'มูลหมัก',
+      quantity: 1500,
+      price: 220,
+      unit: 'กก. / สัปดาห์',
+      location: 'ฟาร์มกระบือ, สุพรรณบุรี',
+      distance: 25.6,
+      verified: true,
+      npk: { n: 2.3, p: 1.6, k: 2.3 },
+      feedType: 'หญ้า/ฟาง',
+      description: 'มูลกระบือหมักสุก เหมาะสำหรับนาข้าว ไร่อ้อย และพืชไร่',
+      images: ['https://images.unsplash.com/photo-1566956884055-5034d746e52f?w=800'],
+      farmName: 'ฟาร์มกระบือสุพรรณบุรี',
+      contactPhone: '087-890-1234',
+      rating: 4.6,
+      reviewCount: 28,
+      createdDate: '2024-11-07',
+    },
+  ]);
 
-  
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const token = await firebaseUser.getIdToken();
-          setAuthToken(token);
-
-          const response = await getMyProfile();
-          
-          // 🚨 [แก้ไข] 👈 ต้องเข้าถึง .data
-          const profile = response.data.data; 
-
-          setUser(profile);
-          setCurrentPage('app');
-
-          await fetchPosts(); 
-
-        } catch (err: any) {
-          console.error("Auth state change error:", err);
-          setError(err.response?.data?.error || err.message || 'Failed to fetch profile');
-          setAuthToken(null);
-          setUser(null);
-          setCurrentPage('landing');
-        }
-      } else {
-        setAuthToken(null);
-        setUser(null);
-        setPosts([]); 
-        setCurrentPage('landing');
-      }
-      setIsLoading(false);
-      setAuthChecked(true);
-    });
-
-    return () => unsubscribe();
-  }, [fetchPosts]); 
-
-  const handleLogout = useCallback(() => {
-    auth.signOut();
-    toast.success('ออกจากระบบสำเร็จ');
-  }, []);
-
-  const handleRegisterSuccess = async (profileData: ProfileFormData) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await createProfile(profileData);
-
-      // 🚨 [แก้ไข] 👈 ต้องเข้าถึง .data
-      const createdUser = response.data.data; 
-      setUser(createdUser);
-      setCurrentPage('app');
-      toast.success(`ยินดีต้อนรับ, ${createdUser.name}!`);
-
-    } catch (err: any) {
-      console.error('💥 Registration Flow Error:', err);
-      let errorMsg = err.response?.data?.error || err.message || 'สร้างโปรไฟล์ไม่สำเร็จ';
-      setError(errorMsg);
-      toast.error(errorMsg);
-      
-      auth.signOut(); 
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    setCurrentPage('dashboard');
   };
 
-  // 🚨 (ฟังก์ชัน CRUD ทั้งหมดถูกต้อง ไม่ต้องแก้) 🚨
-  const handleCreatePost = async (postData: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => {
-    setIsLoading(true);
-    try {
-      await createPost(postData); 
-      toast.success('สร้างโพสต์สำเร็จ!');
-      await fetchPosts(); 
-      setCurrentPage('app'); 
-    } catch (err: any) {
-      console.error("Create post failed:", err);
-      toast.error(err.response?.data?.error || 'สร้างโพสต์ไม่สำเร็จ');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLogout = () => {
+    setUser(null);
+    setCurrentPage('landing');
+    setPosts(posts.filter(p => p.userId !== user?.id)); // Keep other users' posts
   };
 
-  const handleUpdatePost = async (postId: string, updatedData: Partial<Post>) => {
-    setIsLoading(true);
-    try {
-      await updatePost(postId, updatedData); 
-      toast.success('อัปเดตโพสต์สำเร็จ!');
-      await fetchPosts(); 
-      setCurrentPage('app'); 
-      setEditingPost(undefined);
-    } catch (err: any) {
-      console.error("Update post failed:", err);
-      toast.error(err.response?.data?.error || 'อัปเดตโพสต์ไม่สำเร็จ');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeletePost = async (postId: string) => {
-    if (!window.confirm('คุณแน่ใจหรือว่าต้องการลบโพสต์นี้?')) return;
-
-    setIsLoading(true);
-    try {
-      await deletePost(postId); 
-      toast.success('ลบโพสต์สำเร็จ');
-      await fetchPosts(); 
-    } catch (err: any) {
-      console.error("Delete post failed:", err);
-      toast.error(err.response?.data?.error || 'ลบโพสต์ไม่สำเร็จ');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const navigateTo = (page: Page) => {
+  const navigateTo = (page: string) => {
     setCurrentPage(page);
+    // Don't reset selectedPostId if we're editing
+    if (page !== 'create-post') {
+      setSelectedPostId(null);
+    }
+    if (page !== 'create-post') {
+      setIsEditingPost(false);
+    }
   };
 
-  const navigateToEdit = (post: Post) => {
-    setEditingPost(post);
-    setCurrentPage('edit-post');
+  const handleViewPostDetail = (postId: string) => {
+    setSelectedPostId(postId);
+    setCurrentPage('post-detail');
   };
 
-  // 🚨 (Routing ทั้งหมดถูกต้อง ไม่ต้องแก้) 🚨
-  if (!authChecked || (isLoading && currentPage === 'loading')) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>กำลังโหลด...</div>
-      </div>
-    );
+  const handleEditPost = (postId: string) => {
+    setSelectedPostId(postId);
+    setIsEditingPost(true);
+    setCurrentPage('create-post');
+  };
+
+  const handleCreatePost = (newPost: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => {
+    const post: Post = {
+      ...newPost,
+      id: Date.now().toString(),
+      userId: user!.id,
+      farmName: user!.farmName || user!.name,
+      rating: 0,
+      reviewCount: 0,
+      createdDate: new Date().toISOString(),
+    };
+    setPosts([...posts, post]);
+    navigateTo('marketplace');
+  };
+
+  const handleUpdatePost = (postId: string, updatedData: Partial<Post>) => {
+    setPosts(posts.map(p => p.id === postId ? { ...p, ...updatedData } : p));
+    setSelectedPostId(null);
+    setIsEditingPost(false);
+    navigateTo('marketplace');
+  };
+
+  const handleDeletePost = (postId: string) => {
+    setPosts(posts.filter(p => p.id !== postId));
+    navigateTo('marketplace');
+  };
+
+  const handleOpenChat = (postId: string) => {
+    setChatPostId(postId);
+  };
+
+  const handleCloseChat = () => {
+    setChatPostId(null);
+  };
+
+  const handleConfirmChat = (postId: string) => {
+    const post = posts.find(p => p.id === postId);
+    if (!post || !user) return;
+    
+    // สร้างห้องแชทใหม่แต่ไม่เปลี่ยนสถานะโพสต์
+    setChatRooms(prev => [...prev, {
+      id: Date.now().toString(),
+      postId: postId,
+      sellerId: post.userId,
+      buyerId: user.id,
+      sellerName: post.farmName,
+      buyerName: user.name,
+      farmName: post.farmName,
+      lastMessage: 'เริ่มการสนทนา',
+      timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+      unread: 0,
+    }]);
+    setChatPostId(null);
+    navigateTo('chat');
+  };
+
+  const handleConfirmSale = (postId: string, roomId: string) => {
+    // เปลี่ยนสถานะโพสต์เป็น sold เมื่อยืนยันในหน้าแชท
+    setPosts(posts.map(p => p.id === postId ? { ...p, sold: true } : p));
+    // เก็บสถานะว่าห้องนี้ยืนยันแล้ว
+    setConfirmedChatRooms(prev => new Set([...prev, roomId]));
+  };
+
+  const handleCancelChat = (roomId: string) => {
+    // ลบห้องแชทออกจากรายการ
+    setChatRooms(prev => prev.filter(room => room.id !== roomId));
+    // ลบข้อความแชทออก
+    setChatMessages(prev => {
+      const newMessages = { ...prev };
+      delete newMessages[roomId];
+      return newMessages;
+    });
+    // ลบสถานะยืนยันถ้ามี
+    setConfirmedChatRooms(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(roomId);
+      return newSet;
+    });
+  };
+
+  if (!user && currentPage === 'landing') {
+    return <LandingPage onGetStarted={() => setCurrentPage('login')} />;
   }
 
-  if (currentPage === 'app' && user) {
-    return (
-      <>
-        <Toaster position="top-right" richColors />
-        <Dashboard
-          user={user}
-          onLogout={handleLogout}
-          posts={posts} 
-          onNavigate={navigateTo} 
-          onEditPost={navigateToEdit} 
-          onDeletePost={handleDeletePost} 
-        />
-      </>
-    );
+  if (!user && currentPage === 'login') {
+    return <LoginPage onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />;
   }
 
-  if ((currentPage === 'create-post' || currentPage === 'edit-post') && user) {
-    return (
-      <>
-        <Toaster position="top-right" richColors />
-        <CreatePost
-          user={user}
-          onBack={() => setCurrentPage('app')}
-          onCreate={handleCreatePost}
-          onUpdate={handleUpdatePost}
-          editingPost={currentPage === 'edit-post' ? editingPost : undefined}
-        />
-      </>
-    );
-  }
-
-  if (currentPage === 'login') {
-    return (
-      <>
-        <Toaster position="top-right" richColors />
-        <LoginPage
-          onBack={() => setCurrentPage('landing')}
-          onRegisterClick={() => setCurrentPage('register')}
-        />
-      </>
-    );
-  }
-
-  if (currentPage === 'register') {
-    return (
-      <>
-        <Toaster position="top-right" richColors />
-        <RegisterPage
-          onRegisterSuccess={handleRegisterSuccess}
-          onBack={() => setCurrentPage('landing')}
-          onLoginClick={() => setCurrentPage('login')}
-        />
-      </>
-    );
-  }
+  const currentPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
+  const chatPost = chatPostId ? posts.find(p => p.id === chatPostId) : null;
 
   return (
-    <>
-      <Toaster position="top-right" richColors />
-      <LandingPage
-        onLogin={() => setCurrentPage('login')}
-        onRegister={() => setCurrentPage('register')}
-      />
-    </>
+    <div className="min-h-screen bg-gray-50">
+      <Header user={user} onLogout={handleLogout} onNavigate={navigateTo} currentPage={currentPage} />
+      
+      <main className="pt-16">
+        {currentPage === 'dashboard' && (
+          <Dashboard 
+            user={user!} 
+            onNavigate={navigateTo} 
+            posts={posts.filter(p => p.userId === user!.id)}
+            allPosts={posts}
+            onViewDetail={handleViewPostDetail}
+            onEdit={handleEditPost}
+            onDelete={handleDeletePost}
+            onChat={handleOpenChat}
+          />
+        )}
+        {currentPage === 'marketplace' && user?.role !== 'admin' && (
+          <Marketplace 
+            user={user!} 
+            posts={posts}
+            onViewDetail={handleViewPostDetail}
+            onEdit={handleEditPost}
+            onDelete={handleDeletePost}
+            onChat={handleOpenChat}
+            chattingPostIds={new Set(chatRooms.map(room => room.postId))}
+          />
+        )}
+        {currentPage === 'create-post' && user?.role !== 'admin' && (
+          <CreatePost 
+            user={user!} 
+            onBack={() => navigateTo('marketplace')}
+            onCreate={handleCreatePost}
+            onUpdate={handleUpdatePost}
+            editingPost={isEditingPost && currentPost ? currentPost : undefined}
+          />
+        )}
+        {currentPage === 'post-detail' && currentPost && (
+          <PostDetail
+            post={currentPost}
+            onBack={() => navigateTo('marketplace')}
+            onEdit={() => handleEditPost(currentPost.id)}
+            onDelete={() => handleDeletePost(currentPost.id)}
+            isMyPost={currentPost.userId === user?.id}
+            onChat={() => handleOpenChat(currentPost.id)}
+          />
+        )}
+        {currentPage === 'bookings' && user?.role !== 'admin' && <BookingPage user={user!} />}
+        {currentPage === 'fertilizer-advisor' && user.role !== 'admin' && (
+          <FertilizerAdvisor 
+            defaultTab="recommendation" 
+            onTabChange={(tab) => {
+              if (tab === 'calculator') {
+                setCurrentPage('npk-calculator');
+              } else {
+                setCurrentPage('fertilizer-advisor');
+              }
+            }}
+          />
+        )}
+
+        {currentPage === 'npk-calculator' && user.role !== 'admin' && (
+          <FertilizerAdvisor 
+            defaultTab="calculator" 
+            onTabChange={(tab) => {
+              if (tab === 'recommendation') {
+                setCurrentPage('fertilizer-advisor');
+              } else {
+                setCurrentPage('npk-calculator');
+              }
+            }}
+          />
+        )}
+
+        {currentPage === 'circular-view' && user.role !== 'admin' && (
+          <CircularEconomy />
+        )}
+        {currentPage === 'admin' && user?.role === 'admin' && <AdminPanel />}
+        {currentPage === 'chat' && user?.role !== 'admin' && (
+          <ChatPage 
+            user={user!} 
+            chatRooms={chatRooms}
+            posts={posts}
+            confirmedRoomIds={confirmedChatRooms}
+            chatMessages={chatMessages}
+            setChatMessages={setChatMessages}
+            onBack={() => navigateTo('dashboard')} 
+            onConfirmSale={handleConfirmSale}
+            onCancelChat={handleCancelChat}
+          />
+        )}
+        {currentPage === 'profile' && user?.role !== 'admin' && <ProfilePage user={user!} />}
+        
+        {/* Chat Dialog */}
+        {chatPost && (
+          <ChatDialog 
+            post={chatPost}
+            currentUser={user!}
+            onClose={handleCloseChat}
+            onConfirm={() => handleConfirmChat(chatPost.id)}
+          />
+        )}
+      </main>
+    </div>
   );
 }
-
-export default App;

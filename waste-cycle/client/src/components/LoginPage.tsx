@@ -1,44 +1,44 @@
-// client/src/components/LoginPage.tsx
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Recycle } from 'lucide-react';
-import { auth } from '../firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { ArrowLeft, Recycle } from 'lucide-react';
+import type { User, UserRole } from '../App';
 
 interface LoginPageProps {
+  onLogin: (user: User) => void;
   onBack: () => void;
-  onRegisterClick: () => void;
 }
 
-export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
+export function LoginPage({ onLogin, onBack }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      // 3. เรียก Firebase Client SDK
-      await signInWithEmailAndPassword(auth, email, password);
-      // (onAuthStateChanged ใน App.tsx จะตรวจจับได้เอง)
-      
-    } catch (err: any) {
-      console.error("Firebase Login failed:", err.code);
-      setError(getFirebaseErrorMessage(err.code));
-      setIsLoading(false);
-    }
+    
+    const mockUser: User = {
+      id: '1',
+      email: email,
+      name: 'สมชาย เกษตรกร',
+      role: email.includes('admin') ? 'admin' : 'user',
+      farmName: email.includes('admin') ? undefined : 'ฟาร์มของฉัน',
+      verified: true,
+      avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
+    };
+    
+    onLogin(mockUser);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        <Button variant="ghost" onClick={onBack} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" /> กลับ
+        </Button>
+
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -59,7 +59,6 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  disabled={isLoading}
                 />
               </div>
 
@@ -72,32 +71,27 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={isLoading}
                 />
               </div>
 
-              {error && (
-                <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
-                  {error}
-                </div>
-              )}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="admin"
+                  checked={isAdmin}
+                  onChange={(e) => setIsAdmin(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="admin" className="cursor-pointer">เข้าสู่ระบบในฐานะผู้ดูแลระบบ</Label>
+              </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'กำลังโหลด...' : 'เข้าสู่ระบบ'}
+              <Button type="submit" className="w-full">
+                เข้าสู่ระบบ
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                ยังไม่มีบัญชี?{' '}
-                <button
-                  type="button"
-                  onClick={onRegisterClick}
-                  className="text-green-600 hover:text-green-700 hover:underline"
-                >
-                  ลงทะเบียน
-                </button>
-              </p>
+            <div className="mt-4 text-center text-sm text-gray-600">
+              <p>สำหรับทดสอบ: ใช้อีเมลและรหัสผ่านใดก็ได้</p>
             </div>
           </CardContent>
         </Card>
@@ -105,17 +99,3 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
     </div>
   );
 }
-
-// ... (getFirebaseErrorMessage function) ...
-const getFirebaseErrorMessage = (code: string) => {
-  switch (code) {
-    case 'auth/invalid-credential':
-      return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
-    case 'auth/user-not-found':
-      return 'ไม่พบผู้ใช้นี้';
-    case 'auth/wrong-password':
-      return 'รหัสผ่านไม่ถูกต้อง';
-    default:
-      return 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
-  }
-};

@@ -55,7 +55,8 @@
       outDir: 'build',
     },
     server: {
-      port: 3000,
+      port: 3001,
+      strictPort: false, // ถ้า port ถูกใช้ จะลอง port ถัดไป
       open: true,
     },
   });

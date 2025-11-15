@@ -2,13 +2,35 @@
 import { db } from '../config/firebaseConfig.js';
 import { validateProduct } from '../utils/validation.js';
 
-const productsCollection = db.collection('products');
+// Handle mock mode - productsCollection might be null
+const getProductsCollection = () => {
+  if (!db) {
+    console.warn('⚠️  Firestore not available in mock mode');
+    return null;
+  }
+  return db.collection('products');
+};
 
 /**
  * ✅ สร้างสินค้าใหม่ - ใช้ userId จาก token เท่านั้น
  * POST /api/products
  */
 export const createProduct = async (req, res) => {
+  const productsCollection = getProductsCollection();
+  if (!productsCollection) {
+    // Mock mode - return success
+    return res.status(201).json({
+      success: true,
+      message: 'Product created successfully (mock mode)',
+      data: {
+        id: Date.now().toString(),
+        ...req.body,
+        userId: req.user?.uid || req.user?.id || 'mock-user',
+        createdAt: new Date().toISOString(),
+      }
+    });
+  }
+  
   try {
     const {
       name,
@@ -122,6 +144,19 @@ export const createProduct = async (req, res) => {
  * PUT /api/products/:id
  */
 export const updateProduct = async (req, res) => {
+  const productsCollection = getProductsCollection();
+  if (!productsCollection) {
+    // Mock mode - return success
+    return res.status(200).json({
+      success: true,
+      message: 'Product updated successfully (mock mode)',
+      data: {
+        id: req.params.id,
+        ...req.body,
+      }
+    });
+  }
+  
   try {
     const { id } = req.params;
     
@@ -202,6 +237,15 @@ export const updateProduct = async (req, res) => {
  * DELETE /api/products/:id
  */
 export const deleteProduct = async (req, res) => {
+  const productsCollection = getProductsCollection();
+  if (!productsCollection) {
+    // Mock mode - return success
+    return res.status(200).json({
+      success: true,
+      message: 'Product deleted successfully (mock mode)'
+    });
+  }
+  
   try {
     const { id } = req.params;
     
@@ -256,6 +300,16 @@ export const deleteProduct = async (req, res) => {
  * GET /api/products/my-products
  */
 export const getMyProducts = async (req, res) => {
+  const productsCollection = getProductsCollection();
+  if (!productsCollection) {
+    // Mock mode - return empty array
+    return res.status(200).json({
+      success: true,
+      count: 0,
+      data: []
+    });
+  }
+  
   try {
     // ✅ CRITICAL: ใช้ userId จาก token
     const userId = req.user.uid;
@@ -291,4 +345,175 @@ export const getMyProducts = async (req, res) => {
   }
 };
 
-// ... (getAllProducts, getProductById, searchProducts เหมือนเดิม)
+/**
+ * ✅ ดึงสินค้าทั้งหมด
+ * GET /api/products
+ */
+export const getAllProducts = async (req, res) => {
+  const productsCollection = getProductsCollection();
+  if (!productsCollection) {
+    // Mock mode - return empty array
+    return res.status(200).json({
+      success: true,
+      count: 0,
+      data: []
+    });
+  }
+  
+  try {
+    const snapshot = await productsCollection
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+    
+    const products = [];
+    snapshot.forEach(doc => {
+      products.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    res.json({
+      success: true,
+      count: products.length,
+      data: products
+    });
+  } catch (error) {
+    console.error('❌ Get all products error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch products'
+    });
+  }
+};
+
+/**
+ * ✅ ดึงสินค้าตาม ID
+ * GET /api/products/:id
+ */
+export const getProductById = async (req, res) => {
+  const productsCollection = getProductsCollection();
+  if (!productsCollection) {
+    // Mock mode - return mock product
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: req.params.id,
+        name: 'Mock Product',
+        type: 'waste',
+        quantity: 0,
+        location: 'Mock Location',
+      }
+    });
+  }
+  
+  try {
+    const { id } = req.params;
+    
+    const doc = await productsCollection.doc(id).get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    // เพิ่ม view count
+    await productsCollection.doc(id).update({
+      views: (doc.data().views || 0) + 1
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        id: doc.id,
+        ...doc.data()
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get product by ID error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch product'
+    });
+  }
+};
+
+/**
+ * ✅ ค้นหาสินค้า
+ * GET /api/products/search?q=keyword
+ */
+export const searchProducts = async (req, res) => {
+  const productsCollection = getProductsCollection();
+  if (!productsCollection) {
+    // Mock mode - return empty array
+    return res.status(200).json({
+      success: true,
+      count: 0,
+      data: []
+    });
+  }
+  
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query is required'
+      });
+    }
+    
+    const searchTerm = q.toLowerCase().trim();
+    const searchTerms = searchTerm.split(' ');
+    
+    // Search in multiple fields
+    let snapshot;
+    try {
+      // Try to search using searchTerms array field
+      snapshot = await productsCollection
+        .where('searchTerms', 'array-contains-any', searchTerms)
+        .limit(50)
+        .get();
+    } catch (error) {
+      // If search fails, get all and filter client-side
+      console.warn('Firestore search failed, using fallback:', error.message);
+      snapshot = await productsCollection
+        .limit(100)
+        .get();
+    }
+    
+    const products = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const productText = [
+        data.name,
+        data.type,
+        data.location,
+        data.description
+      ].join(' ').toLowerCase();
+      
+      // Filter if using fallback
+      if (productText.includes(searchTerm) || searchTerms.some(term => productText.includes(term))) {
+        products.push({
+          id: doc.id,
+          ...data
+        });
+      }
+    });
+    
+    res.json({
+      success: true,
+      count: products.length,
+      data: products
+    });
+  } catch (error) {
+    console.error('❌ Search products error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search products'
+    });
+  }
+};

@@ -4,6 +4,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+import { execSync } from 'child_process';
 import errorHandler from './src/middleware/errorMiddleware.js'; 
 
 // Import Routes ทั้งหมด
@@ -33,8 +34,16 @@ const PORT = process.env.PORT || 8000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3001',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:5173',
+  ],
+  credentials: true,
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -92,11 +101,73 @@ app.use((req, res) => {
 // Error handling middleware (ตัวจัดการ Error กลาง)
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Waste-Cycle Backend running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+// Helper function to check and kill process on port
+const killProcessOnPort = (port) => {
+  try {
+    const pid = execSync(`lsof -ti:${port}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+    if (pid) {
+      execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+      console.log(`⚠️  Killed existing process (PID: ${pid}) on port ${port}`);
+      return true;
+    }
+  } catch (error) {
+    // No process found on port
+    return false;
+  }
+  return false;
+};
+
+// Start server with retry logic for port conflicts
+const startServer = () => {
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Waste-Cycle Backend running on port ${PORT}`);
+    console.log(`📍 Health check: http://localhost:${PORT}/health`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    if (process.env.USE_MOCK_AUTH === 'true') {
+      console.log(`⚠️  Running in MOCK_AUTH mode (no Firebase required)`);
+    }
+  });
+
+  // Handle server errors
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use.`);
+      if (process.env.AUTO_KILL_PORT === 'true') {
+        console.log(`🔄 Attempting to kill existing process...`);
+        const killed = killProcessOnPort(PORT);
+        if (killed) {
+          console.log(`⏳ Retrying server startup in 2 seconds...`);
+          setTimeout(() => {
+            startServer();
+          }, 2000);
+          return;
+        }
+      }
+      console.error(`   Please stop the existing server or use a different port.`);
+      console.error(`   To kill existing process: lsof -ti:${PORT} | xargs kill -9`);
+      console.error(`   Or set AUTO_KILL_PORT=true in .env to auto-kill on port conflict`);
+      process.exit(1);
+    } else {
+      console.error('❌ Server error:', error);
+      process.exit(1);
+    }
+  });
+
+  return server;
+};
+
+const server = startServer();
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });
 
 export default app;

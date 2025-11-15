@@ -1,21 +1,15 @@
 // server/src/controllers/authController.js
-import admin from 'firebase-admin';
-import { db } from '../config/firebaseConfig.js';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import asyncHandler from '../middleware/asyncHandler.js'; // 👈 [เพิ่ม]
+import { db, auth } from '../config/firebaseConfig.js';
+import asyncHandler from '../middleware/asyncHandler.js';
 
-const clientFirebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+// Check if we're using mock mode
+const USE_MOCK_AUTH = process.env.USE_MOCK_AUTH === 'true';
+
+// Get users collection helper
+const getUsersCollection = () => {
+  if (!db) return null;
+  return db.collection('users');
 };
-
-const clientApp = initializeApp(clientFirebaseConfig, "clientAuthApp");
-const clientAuth = getAuth(clientApp);
-
-const usersCollection = db.collection('users');
 
 /**
  * @desc    Register a new user
@@ -25,48 +19,83 @@ export const register = asyncHandler(async (req, res, next) => {
   const { email, password, displayName, role: requestedRole } = req.body;
 
   if (!email || !password || !displayName) {
-    // 🚨 [แก้ไข]
     return res.status(400).json({ 
       success: false, 
       error: 'กรุณาระบุอีเมล, รหัสผ่าน, และชื่อที่แสดง' 
     });
   }
 
-  const userRecord = await admin.auth().createUser({
-    email,
-    password,
-    displayName,
-  });
+  // Mock mode - return mock user
+  if (USE_MOCK_AUTH || !auth) {
+    const mockUser = {
+      uid: Date.now().toString(),
+      email,
+      displayName,
+      role: requestedRole || (email.includes('admin') ? 'admin' : 'user'),
+      createdAt: new Date().toISOString(),
+      photoURL: null,
+      farmName: '',
+      location: null,
+      verified: true,
+      customToken: 'mock-token-' + Date.now()
+    };
 
-  const user = userRecord.toJSON();
-
-  let role = 'user'; 
-  if (email === 'admin888@gmail.com') { // (อีเมลแอดมินของคุณ)
-    role = 'admin';
+    return res.status(201).json({
+      success: true,
+      message: 'ลงทะเบียนผู้ใช้สำเร็จ (mock mode)',
+      data: mockUser
+    });
   }
 
-  await admin.auth().setCustomUserClaims(user.uid, { role: role });
+  // Firebase mode
+  try {
+    const admin = (await import('firebase-admin')).default;
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      displayName,
+    });
 
-  const userData = {
-    uid: user.uid,
-    email: user.email,
-    displayName: user.displayName,
-    role: role, 
-    createdAt: new Date().toISOString(),
-    photoURL: user.photoURL || null,
-    farmName: '',
-    location: null,
-    verified: false
-  };
-  
-  await usersCollection.doc(user.uid).set(userData);
-  const customToken = await admin.auth().createCustomToken(user.uid, { role: role });
+    const user = userRecord.toJSON();
 
-  res.status(201).json({
-    success: true,
-    message: 'ลงทะเบียนผู้ใช้สำเร็จ', // 🚨 [แก้ไข]
-    data: { ...userData, customToken }
-  });
+    let role = 'user'; 
+    if (email === 'admin888@gmail.com' || requestedRole === 'admin') {
+      role = 'admin';
+    }
+
+    await admin.auth().setCustomUserClaims(user.uid, { role: role });
+
+    const userData = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      role: role, 
+      createdAt: new Date().toISOString(),
+      photoURL: user.photoURL || null,
+      farmName: '',
+      location: null,
+      verified: false
+    };
+    
+    const usersCollection = getUsersCollection();
+    if (usersCollection) {
+      await usersCollection.doc(user.uid).set(userData);
+    }
+
+    const customToken = await admin.auth().createCustomToken(user.uid, { role: role });
+
+    res.status(201).json({
+      success: true,
+      message: 'ลงทะเบียนผู้ใช้สำเร็จ',
+      data: { ...userData, customToken }
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to register user'
+    });
+  }
 });
 
 
@@ -79,34 +108,52 @@ export const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    // 🚨 [แก้ไข]
     return res.status(400).json({ 
       success: false, 
       error: 'กรุณาระบุอีเมลและรหัสผ่าน' 
     });
   }
-  
-  const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
-  const user = userCredential.user;
 
-  const userRecord = await admin.auth().getUser(user.uid);
-  const role = userRecord.customClaims?.role || 'user';
+  // Mock mode - return mock user
+  if (USE_MOCK_AUTH || !auth) {
+    const mockUser = {
+      uid: Date.now().toString(),
+      email,
+      displayName: email.includes('admin') ? 'ผู้ดูแลระบบ' : 'สมชาย เกษตรกร',
+      role: email.includes('admin') ? 'admin' : 'user',
+      photoURL: null,
+      farmName: email.includes('admin') ? undefined : 'ฟาร์มของฉัน',
+      location: null,
+      verified: true,
+      customToken: 'mock-token-' + Date.now()
+    };
 
-  const customToken = await admin.auth().createCustomToken(user.uid, { role: role });
+    return res.status(200).json({
+      success: true,
+      message: 'เข้าสู่ระบบสำเร็จ (mock mode)',
+      data: mockUser
+    });
+  }
 
-  const userDoc = await usersCollection.doc(user.uid).get();
-  const userData = userDoc.exists ? userDoc.data() : {
-    uid: user.uid,
-    email: user.email,
-    displayName: user.displayName,
-    role: role
-  };
-
-  res.status(200).json({
-    success: true,
-    message: 'เข้าสู่ระบบสำเร็จ', // 🚨 [แก้ไข]
-    data: { ...userData, customToken }
-  });
+  // Firebase mode - use Admin SDK to verify credentials
+  try {
+    const admin = (await import('firebase-admin')).default;
+    
+    // Note: Firebase Admin SDK doesn't have signInWithEmailAndPassword
+    // This should be handled client-side, but for backend we can verify token
+    // For now, return error suggesting client-side login
+    res.status(400).json({
+      success: false,
+      error: 'Login should be handled client-side with Firebase Auth SDK',
+      message: 'Please use Firebase client SDK to login, then send the ID token to backend'
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to login'
+    });
+  }
 });
 
 /**

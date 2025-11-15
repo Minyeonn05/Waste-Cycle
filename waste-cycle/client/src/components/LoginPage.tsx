@@ -5,6 +5,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { ArrowLeft, Recycle } from 'lucide-react';
 import type { User, UserRole } from '../App';
+import { loginUser, getMyProfile } from '../apiServer';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -15,22 +16,63 @@ interface LoginPageProps {
 export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const mockUser: User = {
-      id: '1',
-      email: email,
-      name: 'สมชาย เกษตรกร',
-      role: email.includes('admin') ? 'admin' : 'user',
-      farmName: email.includes('admin') ? undefined : 'ฟาร์มของฉัน',
-      verified: true,
-      avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
-    };
-    
-    onLogin(mockUser);
+    setLoading(true);
+    setError('');
+
+    try {
+      // Login with Firebase Auth
+      const userCredential = await loginUser(email, password);
+      const firebaseUser = userCredential.user;
+
+      // Get user profile from backend
+      try {
+        const profileResponse = await getMyProfile();
+        const profileData = profileResponse.data.data || profileResponse.data;
+        
+        const user: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || email,
+          name: profileData.displayName || profileData.name || firebaseUser.displayName || 'ผู้ใช้',
+          role: profileData.role || 'user',
+          farmName: profileData.farmName,
+          verified: firebaseUser.emailVerified || profileData.verified || false,
+          avatar: profileData.photoURL || profileData.avatar || firebaseUser.photoURL,
+        };
+        
+        onLogin(user);
+      } catch (profileError: any) {
+        // If profile doesn't exist, create a basic user object
+        if (profileError.response?.status === 404) {
+          const user: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || email,
+            name: firebaseUser.displayName || 'ผู้ใช้',
+            role: 'user',
+            verified: firebaseUser.emailVerified,
+            avatar: firebaseUser.photoURL,
+          };
+          onLogin(user);
+        } else {
+          throw profileError;
+        }
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(
+        err.code === 'auth/user-not-found' ? 'ไม่พบผู้ใช้นี้ในระบบ' :
+        err.code === 'auth/wrong-password' ? 'รหัสผ่านไม่ถูกต้อง' :
+        err.code === 'auth/invalid-email' ? 'รูปแบบอีเมลไม่ถูกต้อง' :
+        err.code === 'auth/too-many-requests' ? 'เข้าสู่ระบบผิดพลาดหลายครั้ง กรุณารอสักครู่' :
+        err.response?.data?.error || err.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,19 +113,14 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="admin"
-                  checked={isAdmin}
-                  onChange={(e) => setIsAdmin(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="admin" className="cursor-pointer">เข้าสู่ระบบในฐานะผู้ดูแลระบบ</Label>
-              </div>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  {error}
+                </div>
+              )}
 
-              <Button type="submit" className="w-full">
-                เข้าสู่ระบบ
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
               </Button>
             </form>
 
@@ -98,10 +135,6 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
                   ลงทะเบียน
                 </button>
               </p>
-            </div>
-
-            <div className="mt-4 text-center text-sm text-gray-600">
-              <p>สำหรับทดสอบ: ใช้อีเมลและรหัสผ่านใดก็ได้</p>
             </div>
           </CardContent>
         </Card>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
@@ -14,6 +14,7 @@ import { ChatPage } from './components/ChatPage';
 import { ProfilePage } from './components/ProfilePage';
 import { ChatDialog } from './components/ChatDialog';
 import { RegisterPage } from './components/RegisterPage';
+import { onAuthChange, logoutUser, getMyProfile } from './apiServer';
 
 export type UserRole = 'user' | 'admin';
 
@@ -243,7 +244,58 @@ export default function App() {
     setCurrentPage('dashboard');
   };
 
-  const handleLogout = () => {
+  // Listen to Firebase Auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is logged in, fetch profile
+        try {
+          const profileResponse = await getMyProfile();
+          const profileData = profileResponse.data.data || profileResponse.data;
+          
+          const userData: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: profileData.displayName || profileData.name || firebaseUser.displayName || 'ผู้ใช้',
+            role: profileData.role || 'user',
+            farmName: profileData.farmName,
+            verified: firebaseUser.emailVerified || profileData.verified || false,
+            avatar: profileData.photoURL || profileData.avatar || firebaseUser.photoURL,
+          };
+          
+          setUser(userData);
+        } catch (error: any) {
+          // If profile doesn't exist, create basic user object
+          if (error.response?.status === 404) {
+            const userData: User = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || 'ผู้ใช้',
+              role: 'user',
+              verified: firebaseUser.emailVerified,
+              avatar: firebaseUser.photoURL,
+            };
+            setUser(userData);
+          }
+        }
+      } else {
+        // User is logged out
+        setUser(null);
+        if (currentPage !== 'landing') {
+          setCurrentPage('landing');
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     setUser(null);
     setCurrentPage('landing');
     setPosts(posts.filter(p => p.userId !== user?.id)); // Keep other users' posts

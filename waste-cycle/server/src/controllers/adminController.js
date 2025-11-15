@@ -4,10 +4,41 @@ import admin from 'firebase-admin';
 import asyncHandler from '../middleware/asyncHandler.js'; 
 import { createNotification } from '../utils/notificationService.js';
 
-const usersCollection = db.collection('users');
-const farmsCollection = db.collection('farms');
-const communityPostsCollection = db.collection('community_posts');
-const reportsCollection = db.collection('reports');
+// Helper functions to safely get collections
+const getUsersCollection = () => {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please check Firebase configuration.');
+  }
+  return db.collection('users');
+};
+
+const getFarmsCollection = () => {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please check Firebase configuration.');
+  }
+  return db.collection('farms');
+};
+
+const getCommunityPostsCollection = () => {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please check Firebase configuration.');
+  }
+  return db.collection('community_posts');
+};
+
+const getReportsCollection = () => {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please check Firebase configuration.');
+  }
+  return db.collection('reports');
+};
+
+const getProductsCollection = () => {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please check Firebase configuration.');
+  }
+  return db.collection('products');
+};
 
 /**
  * @desc    (Admin) ดูรายชื่อผู้ใช้ทั้งหมด (API-22)
@@ -15,6 +46,7 @@ const reportsCollection = db.collection('reports');
  * @access  Admin
  */
 export const getAllUsers = asyncHandler(async (req, res, next) => {
+  const usersCollection = getUsersCollection();
   const snapshot = await usersCollection.orderBy('createdAt', 'desc').get();
   const users = [];
   snapshot.forEach(doc => {
@@ -31,6 +63,8 @@ export const getAllUsers = asyncHandler(async (req, res, next) => {
  */
 export const verifyFarmByUserId = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
+  const farmsCollection = getFarmsCollection();
+  const usersCollection = getUsersCollection();
 
   // 1. ค้นหาฟาร์มโดยใช้ userId
   const farmQuery = farmsCollection.where('userId', '==', userId).limit(1);
@@ -79,6 +113,7 @@ export const verifyFarmByUserId = asyncHandler(async (req, res, next) => {
  */
 export const removePost = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
+  const productsCollection = getProductsCollection();
   
   // 🚨 [แก้ไข] เราควรลบจาก collection 'products' ไม่ใช่ 'community_posts'
   const postRef = productsCollection.doc(id); 
@@ -101,6 +136,7 @@ export const removePost = asyncHandler(async (req, res, next) => {
  */
 export const getReports = asyncHandler(async (req, res, next) => {
   // (โค้ดนี้เป็นการจำลอง ถ้าคุณยังไม่มี collection 'reports' จริง)
+  const reportsCollection = getReportsCollection();
   const snapshot = await reportsCollection.where('status', '==', 'pending').get();
   
   if (snapshot.empty) {

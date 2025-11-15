@@ -6,12 +6,12 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Recycle } from 'lucide-react';
 
-// 🚨 1. Import Firebase
+// 1. Import Firebase
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 interface LoginPageProps {
-  // 🚨 2. ลบ onLogin ออก (จัดการในนี้)
+  // 2. ลบ onLogin ออก (จัดการในนี้)
   onBack: () => void;
   onRegisterClick: () => void;
 }
@@ -28,17 +28,16 @@ export function LoginPage({ onBack, onRegisterClick }: LoginPageProps) {
     setIsLoading(true);
 
     try {
-      // 🚨 3. เรียก Firebase Client SDK
+      // 3. เรียก Firebase Client SDK
       await signInWithEmailAndPassword(auth, email, password);
       // ... จบ! ...
       // onAuthStateChanged ใน App.tsx จะตรวจจับได้เอง
-      // และจะพาไปหน้า Dashboard 
+      
     } catch (err: any) {
       console.error("Firebase Login failed:", err.code);
       setError(getFirebaseErrorMessage(err.code));
       setIsLoading(false);
     }
-    // ไม่ต้อง setIsLoading(false) ใน "try" เพราะ component จะ unmount
   };
 
   return (

@@ -6,11 +6,12 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Recycle } from 'lucide-react';
 
-// 🚨 1. Import Firebase
+// 1. Import Firebase และ setAuthToken
 import { auth } from '../firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { setAuthToken } from '../apiServer'; // <-- 🚨 Import นี้สำคัญมาก
 
-// 🚨 2. สร้าง Interface สำหรับข้อมูลโปรไฟล์
+// 2. สร้าง Interface สำหรับข้อมูลโปรไฟล์
 interface ProfileFormData {
   name: string;
   farmName?: string;
@@ -18,7 +19,7 @@ interface ProfileFormData {
 }
 
 interface RegisterPageProps {
-  onRegisterSuccess: (data: ProfileFormData) => void; // <-- ส่งกลับไป App.tsx
+  onRegisterSuccess: (data: ProfileFormData) => void; // <-- 🚨 เปลี่ยน Prop เป็น onRegisterSuccess
   onBack: () => void;
   onLoginClick: () => void;
 }
@@ -45,20 +46,19 @@ export function RegisterPage({ onRegisterSuccess, onBack, onLoginClick }: Regist
     setIsLoading(true);
 
     try {
-      // 🚨 3. ขั้นตอนที่ 1: สร้าง User ใน Firebase Auth
-      await createUserWithEmailAndPassword(auth, email, password);
+      // 3. 🚨 ขั้นตอนที่ 1: สร้าง User ใน Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // ... (onAuthStateChanged ใน App.tsx จะทำงาน) ...
-      
-      // 🚨 4. ขั้นตอนที่ 2: ส่งข้อมูลโปรไฟล์กลับไป App.tsx
-      // เพื่อให้ App.tsx เรียก API สร้างโปรไฟล์ใน Backend
+      // 4. 🚨 ขั้นตอนที่ 2 (ที่ขาดไปในรอบก่อน): ขอ Token และตั้งค่าทันที
+      const token = await userCredential.user.getIdToken();
+      setAuthToken(token); // <-- 🚨 บรรทัดนี้แก้บั๊ก Race Condition
+
+      // 5. 🚨 ขั้นตอนที่ 3: ส่งข้อมูลโปรไฟล์กลับไป App.tsx
       onRegisterSuccess({
         name,
         farmName: isAdmin ? undefined : (farmName.trim() || undefined),
         role: isAdmin ? 'admin' : 'user',
       });
-
-      // App.tsx จะจัดการเปลี่ยนหน้าไป Dashboard
       
     } catch (err: any) {
       console.error("Firebase Register failed:", err.code);

@@ -69,42 +69,12 @@ export const getProductById = (id: string) => {
   return api.get(`/products/${id}`);
 };
 
-// Helper function to mock image upload and return URLs (to prevent large Base64 data upload)
-const mockImageUpload = (images: string[]): string[] => {
-  if (!images || images.length === 0) return [];
-  
-  // NOTE: ในแอปจริง, ส่วนนี้คือที่ที่คุณจะเรียกใช้ Firebase Storage หรือบริการอื่น ๆ
-  // เพื่ออัปโหลดรูปภาพและส่งคืน URL
-  // สำหรับตอนนี้ เรา mock เป็น URL เพื่อจำลองการทำงานที่สำเร็จ
-  return images.map((_, index) => 
-    `https://mockstorage.com/images/${Date.now()}-${index}.jpg`
-  );
-};
-
 export const createProduct = (productData: any) => {
-  // 1. Mock image upload to get URLs
-  const imageUrls = mockImageUpload(productData.images);
-  
-  // 2. Prepare data to send to the server (replace large Base64 data with mock URLs)
-  const dataToSend = {
-    ...productData,
-    images: imageUrls, 
-  };
-  
-  return api.post('/products', dataToSend);
+  return api.post('/products', productData);
 };
 
 export const updateProduct = (id: string, productData: any) => {
-  // 1. Mock image upload to get URLs 
-  const imageUrls = mockImageUpload(productData.images);
-
-  // 2. Prepare data to send to the server
-  const dataToSend = {
-    ...productData,
-    images: imageUrls, 
-  };
-  
-  return api.put(`/products/${id}`, dataToSend);
+  return api.put(`/products/${id}`, productData);
 };
 
 export const deleteProduct = (id: string) => {

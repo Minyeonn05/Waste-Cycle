@@ -4,14 +4,15 @@ import { db, auth } from '../config/firebaseConfig.js';
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = req.user; 
   if (user) {
+    // FIX: เพิ่มความทนทาน (Robustness) ด้วยการใส่ค่า default ให้กับทุก field
     res.status(200).json({
       success: true,
       user: {
-        id: user.id,
-        uid: user.uid,
-        email: user.email,
-        name: user.name,
-        role: user.role,
+        id: user.id, // ID จาก Doc ID (UID)
+        uid: user.uid || user.id, // UID, ใช้ id เป็นค่าสำรองหาก field uid หายไป
+        email: user.email || '', // ค่า default เพื่อป้องกัน undefined
+        name: user.name || 'Unknown User', // ค่า default เพื่อป้องกัน undefined
+        role: user.role || 'user', // ค่า default เพื่อป้องกัน undefined
         farmName: user.farmName || '',
         location: user.location || null,
         verified: user.verified || false,
@@ -33,7 +34,7 @@ const createUserProfile = asyncHandler(async (req, res) => {
     throw new Error('Not authorized');
   }
 
-  // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
+  // FIX: ใช้ user.id ที่ถูก set โดย protectTokenOnly
   const userRef = db.collection('users').doc(user.id);
   const userDoc = await userRef.get();
 
@@ -43,8 +44,8 @@ const createUserProfile = asyncHandler(async (req, res) => {
   }
 
   const newUserProfile = {
-    // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
-    uid: user.id, // ใช้ user.id ที่มีค่า UID
+    // FIX: ใช้ user.id
+    uid: user.id,
     email: user.email, 
     name,
     farmName: farmName || '',
@@ -58,8 +59,8 @@ const createUserProfile = asyncHandler(async (req, res) => {
   res.status(201).json({
     success: true,
     user: {
-      // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
-      id: user.id, // ใช้ user.id
+      // FIX: ใช้ user.id
+      id: user.id,
       ...newUserProfile,
     },
   });
@@ -74,7 +75,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error('Not authorized');
   }
 
-  // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
+  // FIX: ใช้ user.id
   const userRef = db.collection('users').doc(user.id);
   const userDoc = await userRef.get();
 

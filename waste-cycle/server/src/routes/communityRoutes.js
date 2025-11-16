@@ -1,39 +1,20 @@
+// server/src/routes/communityRoutes.js
+
 import express from 'express';
-import {
-  getAllPosts,
-  createPost,
-  getPostById,
-  updatePost,
-  deletePost,
-  addComment,
-  deleteComment,
-  likePost,
-  unlikePost,
-} from '../controllers/communityController.js';
-import { protect } from '../middleware/authMiddleware.js';
-import { admin } from '../middleware/roleMiddleware.js';
+// FIX: นำเข้า createPost, getPosts และ updatePost
+import { createPost, getPosts, updatePost } from '../controllers/communityController.js'; 
+import { protect } from '../middleware/authMiddleware.js'; 
+// import { admin } from '../middleware/roleMiddleware.js'; // (ถ้ามี)
 
 const router = express.Router();
 
-router.route('/')
-  .get(getAllPosts)
-  .post(protect, createPost);
+// Route สำหรับสร้างโพสต์ (POST) และดูโพสต์ทั้งหมด (GET)
+router.route('/posts')
+    .post(protect, createPost) // สร้างโพสต์ใหม่
+    .get(protect, getPosts);   // ดึงโพสต์ทั้งหมด
 
-router.route('/:id')
-  .get(getPostById)
-  .put(protect, updatePost)
-  .delete(protect, deletePost);
-
-router.route('/:id/comments')
-  .post(protect, addComment);
-
-router.route('/:id/comments/:commentId')
-  .delete(protect, deleteComment);
-
-router.route('/:id/like')
-  .post(protect, likePost);
-
-router.route('/:id/unlike')
-  .post(protect, unlikePost);
+// Route สำหรับแก้ไขโพสต์
+router.route('/posts/:id')
+     .put(protect, updatePost); // อัปเดตโพสต์ด้วย ID
 
 export default router;

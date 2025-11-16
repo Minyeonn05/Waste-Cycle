@@ -8,16 +8,27 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import type { User, Post } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+// FIX: เพิ่มการนำเข้า API Client และ Toast (Sonner)
+import api from '../apiServer'; 
+import { toast } from 'sonner';
 
 interface CreatePostProps {
   user: User;
   onBack: () => void;
-  onCreate: (post: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => void;
-  onUpdate: (postId: string, updatedData: Partial<Post>) => void;
+  // FIX: ลบ prop onCreate/onUpdate แบบ Mock ออก
+  // onCreate: (post: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => void;
+  // onUpdate: (postId: string, updatedData: Partial<Post>) => void;
   editingPost?: Post;
 }
 
-export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: CreatePostProps) {
+// FIX: กำหนดประเภทสัตว์ที่อนุญาต (หมู, ไก่, วัว)
+const ALLOWED_ANIMAL_TYPES = [
+    { value: 'pig', label: 'หมู (สุกร)' },
+    { value: 'chicken', label: 'ไก่' },
+    { value: 'cow', label: 'วัว (โค)' },
+];
+
+export function CreatePost({ user, onBack, editingPost }: CreatePostProps) {
   const [formData, setFormData] = useState({
     title: '',
     animalType: '',
@@ -32,6 +43,7 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
   });
 
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false); // State สำหรับควบคุมการโหลด
 
   // Load editing post data
   useEffect(() => {
@@ -61,7 +73,7 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
         reader.onloadend = () => {
           newImages.push(reader.result as string);
           if (newImages.length === files.length) {
-            setUploadedImages([...uploadedImages, ...newImages]);
+            setUploadedImages(prev => [...prev, ...newImages]);
           }
         };
         reader.readAsDataURL(file);
@@ -75,19 +87,18 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
 
   const calculateNPK = () => {
     // Simple NPK calculation based on animal type and feed type
+    // FIX: เปลี่ยน keys ให้ตรงกับ value ที่กำหนด (pig, chicken, cow)
     const baseNPK: Record<string, { n: number; p: number; k: number }> = {
       chicken: { n: 3.2, p: 2.8, k: 1.5 },
-      duck: { n: 2.9, p: 2.5, k: 1.6 },
       cow: { n: 2.5, p: 1.8, k: 2.1 },
       pig: { n: 3.8, p: 3.2, k: 2.4 },
-      sheep: { n: 3.0, p: 2.2, k: 1.8 },
-      goat: { n: 2.8, p: 2.0, k: 1.7 },
+      // นอกเหนือจาก 3 ตัวนี้ อาจจะต้องกลับไปใช้ค่า default
     };
 
     return baseNPK[formData.animalType] || { n: 3.0, p: 2.5, k: 2.0 };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const postData = {
@@ -98,19 +109,48 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
       price: parseFloat(formData.price),
       unit: formData.unit,
       location: formData.location,
-      distance: Math.random() * 20, // Mock distance
+      // Mock data that the server expects or will ignore/recalculate
+      distance: Math.random() * 20, 
       verified: true,
-      npk: calculateNPK(),
+      npk: calculateNPK(), // ส่ง NPK ที่คำนวณแล้วไปให้ Server
       feedType: formData.feedType,
       description: formData.description,
       images: uploadedImages,
-      contactPhone: formData.contactPhone || '081-234-5678',
+      contactPhone: formData.contactPhone || user.contactPhone || '', // ใช้เบอร์ติดต่อจาก User หากไม่ได้กรอก
     };
+    
+    // Client-side Validation
+    if (!formData.title || !formData.animalType || !formData.wasteType || isNaN(postData.quantity) || isNaN(postData.price) || !formData.location || !formData.description || !postData.contactPhone) {
+        toast.error('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน');
+        return;
+    }
+    
+    if (!ALLOWED_ANIMAL_TYPES.some(a => a.value === formData.animalType)) {
+         toast.error('ประเภทสัตว์ไม่ถูกต้อง ต้องเป็น หมู, ไก่, หรือ วัว เท่านั้น');
+         return;
+    }
 
-    if (editingPost) {
-      onUpdate(editingPost.id, postData);
-    } else {
-      onCreate(postData);
+    setIsLoading(true);
+
+    try {
+      if (editingPost) {
+        // FIX: ใช้ API call สำหรับอัปเดต (สมมติว่ามี PUT /posts/:id)
+        const res = await api.put(`/community/posts/${editingPost.id}`, postData); 
+        toast.success(res.data.message || 'บันทึกการแก้ไขสำเร็จ');
+        // onUpdate(editingPost.id, postData); // ลบ Mock Call
+      } else {
+        // FIX: ใช้ API call สำหรับสร้างโพสต์
+        const res = await api.post('/community/posts', postData);
+        toast.success(res.data.message || 'สร้างโพสต์สำเร็จ');
+        // onCreate(postData); // ลบ Mock Call
+      }
+      onBack(); // กลับไปหน้าก่อนหน้าหลังจากสำเร็จ
+      
+    } catch (error: any) {
+      console.error('Post Error:', error.response?.data?.error || error.message);
+      toast.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการดำเนินการ');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -133,7 +173,7 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
 
           <CardContent className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Image Upload */}
+              {/* Image Upload Section */}
               <div className="space-y-3">
                 <Label className="text-base">รูปภาพ</Label>
                 
@@ -196,20 +236,16 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
                   <Select 
                     value={formData.animalType} 
                     onValueChange={(value) => setFormData({ ...formData, animalType: value })}
+                    required
                   >
                     <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
                       <SelectValue placeholder="เลือกประเภทสัตว์" />
                     </SelectTrigger>
+                    {/* FIX: จำกัดตัวเลือกเหลือแค่ หมู ไก่ วัว */}
                     <SelectContent>
-                      <SelectItem value="ไก่">ไก่</SelectItem>
-                      <SelectItem value="ไก่ไข่">ไก่ไข่</SelectItem>
-                      <SelectItem value="เป็ด">เป็ด</SelectItem>
-                      <SelectItem value="โค">โค</SelectItem>
-                      <SelectItem value="โคนม">โคนม</SelectItem>
-                      <SelectItem value="กระบือ">กระบือ</SelectItem>
-                      <SelectItem value="สุกร">สุกร</SelectItem>
-                      <SelectItem value="แพะ">แพะ</SelectItem>
-                      <SelectItem value="แกะ">แกะ</SelectItem>
+                      {ALLOWED_ANIMAL_TYPES.map(animal => (
+                        <SelectItem key={animal.value} value={animal.value}>{animal.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -219,6 +255,7 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
                   <Select 
                     value={formData.wasteType} 
                     onValueChange={(value) => setFormData({ ...formData, wasteType: value })}
+                    required
                   >
                     <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
                       <SelectValue placeholder="เลือกประเภท" />
@@ -372,8 +409,9 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
                 <Button 
                   type="submit" 
                   className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
+                  disabled={isLoading}
                 >
-                  {editingPost ? '💾 บันทึกการแก้ไข' : '📤 ลงประกาศ'}
+                  {isLoading ? 'กำลังดำเนินการ...' : editingPost ? '💾 บันทึกการแก้ไข' : '📤 ลงประกาศ'}
                 </Button>
               </div>
             </form>

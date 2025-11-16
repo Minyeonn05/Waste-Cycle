@@ -26,14 +26,15 @@ const getUserProfile = asyncHandler(async (req, res) => {
 
 const createUserProfile = asyncHandler(async (req, res) => {
   const { name, farmName, role } = req.body;
-  const user = req.user;
+  const user = req.user; // req.user.id คือ UID ที่มาจาก protectTokenOnly
 
   if (!user) {
     res.status(401);
     throw new Error('Not authorized');
   }
 
-  const userRef = db.collection('users').doc(user.uid);
+  // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
+  const userRef = db.collection('users').doc(user.id);
   const userDoc = await userRef.get();
 
   if (userDoc.exists) {
@@ -42,7 +43,8 @@ const createUserProfile = asyncHandler(async (req, res) => {
   }
 
   const newUserProfile = {
-    uid: user.uid,
+    // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
+    uid: user.id, // ใช้ user.id ที่มีค่า UID
     email: user.email, 
     name,
     farmName: farmName || '',
@@ -56,7 +58,8 @@ const createUserProfile = asyncHandler(async (req, res) => {
   res.status(201).json({
     success: true,
     user: {
-      id: user.uid,
+      // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
+      id: user.id, // ใช้ user.id
       ...newUserProfile,
     },
   });
@@ -64,14 +67,15 @@ const createUserProfile = asyncHandler(async (req, res) => {
 
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { name, farmName, location } = req.body;
-  const user = req.user;
+  const user = req.user; // req.user.id คือ UID ที่มาจาก protect
 
   if (!user) {
     res.status(401);
     throw new Error('Not authorized');
   }
 
-  const userRef = db.collection('users').doc(user.uid);
+  // **** FIX: เปลี่ยนจาก user.uid เป็น user.id ****
+  const userRef = db.collection('users').doc(user.id);
   const userDoc = await userRef.get();
 
   if (!userDoc.exists) {

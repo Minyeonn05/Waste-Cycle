@@ -17,6 +17,23 @@ interface CreatePostProps {
   editingPost?: Post;
 }
 
+// Helper to mock geocoding (for demonstration, converting string address to an object with coordinates)
+const mockGeocode = (address: string) => {
+  let lat = 18.7883; // Default to Chiang Mai
+  let lng = 98.9853; 
+  
+  if (address.toLowerCase().includes('กรุงเทพ')) {
+    lat = 13.7563;
+    lng = 100.5018;
+  } else if (address.toLowerCase().includes('ขอนแก่น')) {
+    lat = 16.4323;
+    lng = 102.8361;
+  }
+  
+  // Returns the object structure expected by the Post type
+  return { lat, lng, address: address || 'ไม่ระบุ' };
+};
+
 export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: CreatePostProps) {
   const [formData, setFormData] = useState({
     title: '',
@@ -36,6 +53,13 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
   // Load editing post data
   useEffect(() => {
     if (editingPost) {
+      // FIX: ใช้ 'unknown' เพื่อแก้ไข TypeScript error จากการที่ location อาจไม่ overlap กับ { address: string }
+      // เราทราบว่า Post.location ควรจะมี address, lat, lng
+      const locationAddress = 
+        typeof editingPost.location === 'string' 
+        ? editingPost.location 
+        : (editingPost.location as unknown as { address: string }).address || '';
+
       setFormData({
         title: editingPost.title,
         animalType: editingPost.animalType,
@@ -44,7 +68,7 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
         price: editingPost.price.toString(),
         description: editingPost.description,
         feedType: editingPost.feedType,
-        location: editingPost.location,
+        location: locationAddress, // ใช้ string address สำหรับ input field
         unit: editingPost.unit,
         contactPhone: editingPost.contactPhone,
       });
@@ -74,30 +98,56 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
   };
 
   const calculateNPK = () => {
-    // Simple NPK calculation based on animal type and feed type
+    // Simple NPK calculation based on ANIMAL TYPE and FEED TYPE
+    // Values are placeholders for demonstration, real NPK calculation is complex.
     const baseNPK: Record<string, { n: number; p: number; k: number }> = {
-      chicken: { n: 3.2, p: 2.8, k: 1.5 },
-      duck: { n: 2.9, p: 2.5, k: 1.6 },
-      cow: { n: 2.5, p: 1.8, k: 2.1 },
-      pig: { n: 3.8, p: 3.2, k: 2.4 },
-      sheep: { n: 3.0, p: 2.2, k: 1.8 },
-      goat: { n: 2.8, p: 2.0, k: 1.7 },
+      ไก่: { n: 3.2, p: 2.8, k: 1.5 },
+      โค: { n: 2.5, p: 1.8, k: 2.1 },
+      สุกร: { n: 3.8, p: 3.2, k: 2.4 },
     };
 
-    return baseNPK[formData.animalType] || { n: 3.0, p: 2.5, k: 2.0 };
+    let npk = baseNPK[formData.animalType] || { n: 3.0, p: 2.5, k: 2.0 };
+    
+    // Adjust based on Feed Type (simple mock adjustment)
+    if (formData.feedType === 'อาหารออร์แกนิก') {
+        npk.n += 0.5; // Slightly higher NPK for premium feed
+        npk.p += 0.3;
+    } else if (formData.feedType === 'หญ้า/ฟาง') {
+        npk.n -= 0.5; // Slightly lower NPK for simpler feed
+        npk.k += 0.2; 
+    }
+
+    return { 
+        n: parseFloat(npk.n.toFixed(1)), 
+        p: parseFloat(npk.p.toFixed(1)), 
+        k: parseFloat(npk.k.toFixed(1)) 
+    };
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Ensure numeric values are valid
+    const quantity = parseFloat(formData.quantity);
+    const price = parseFloat(formData.price);
+
+    if (isNaN(quantity) || isNaN(price) || quantity <= 0 || price < 0 || !formData.animalType) {
+        alert('กรุณากรอกข้อมูลปริมาณ, ราคา และประเภทสัตว์ให้ถูกต้อง');
+        return;
+    }
+
+    // Prepare location object using mock geocoding
+    const locationObject = mockGeocode(formData.location);
+
     const postData = {
       title: formData.title,
       animalType: formData.animalType,
       wasteType: formData.wasteType,
-      quantity: parseFloat(formData.quantity),
-      price: parseFloat(formData.price),
+      quantity: quantity,
+      price: price,
       unit: formData.unit,
-      location: formData.location,
+      // NOTE: ส่ง location ในรูปแบบ Object { lat, lng, address } 
+      location: locationObject, 
       distance: Math.random() * 20, // Mock distance
       verified: true,
       npk: calculateNPK(),
@@ -108,8 +158,10 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
     };
 
     if (editingPost) {
+      // onUpdate จะส่งข้อมูลไปที่ Server/Firebase
       onUpdate(editingPost.id, postData);
     } else {
+      // onCreate จะส่งข้อมูลไปที่ Server/Firebase
       onCreate(postData);
     }
   };
@@ -201,15 +253,11 @@ export function CreatePost({ user, onBack, onCreate, onUpdate, editingPost }: Cr
                       <SelectValue placeholder="เลือกประเภทสัตว์" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ไก่">ไก่</SelectItem>
-                      <SelectItem value="ไก่ไข่">ไก่ไข่</SelectItem>
-                      <SelectItem value="เป็ด">เป็ด</SelectItem>
-                      <SelectItem value="โค">โค</SelectItem>
-                      <SelectItem value="โคนม">โคนม</SelectItem>
-                      <SelectItem value="กระบือ">กระบือ</SelectItem>
-                      <SelectItem value="สุกร">สุกร</SelectItem>
-                      <SelectItem value="แพะ">แพะ</SelectItem>
-                      <SelectItem value="แกะ">แกะ</SelectItem>
+                      {/* --- แก้ไข: เหลือเพียง ไก่, โค, สุกร --- */}
+                      <SelectItem value="ไก่">ไก่ (Chicken)</SelectItem>
+                      <SelectItem value="โค">โค (Cow)</SelectItem>
+                      <SelectItem value="สุกร">สุกร (Pig)</SelectItem>
+                      {/* ------------------------------------- */}
                     </SelectContent>
                   </Select>
                 </div>

@@ -69,12 +69,42 @@ export const getProductById = (id: string) => {
   return api.get(`/products/${id}`);
 };
 
+// Helper function to mock image upload and return URLs (to prevent large Base64 data upload)
+const mockImageUpload = (images: string[]): string[] => {
+  if (!images || images.length === 0) return [];
+  
+  // NOTE: ในแอปจริง, ส่วนนี้คือที่ที่คุณจะเรียกใช้ Firebase Storage หรือบริการอื่น ๆ
+  // เพื่ออัปโหลดรูปภาพและส่งคืน URL
+  // สำหรับตอนนี้ เรา mock เป็น URL เพื่อจำลองการทำงานที่สำเร็จ
+  return images.map((_, index) => 
+    `https://mockstorage.com/images/${Date.now()}-${index}.jpg`
+  );
+};
+
 export const createProduct = (productData: any) => {
-  return api.post('/products', productData);
+  // 1. Mock image upload to get URLs
+  const imageUrls = mockImageUpload(productData.images);
+  
+  // 2. Prepare data to send to the server (replace large Base64 data with mock URLs)
+  const dataToSend = {
+    ...productData,
+    images: imageUrls, 
+  };
+  
+  return api.post('/products', dataToSend);
 };
 
 export const updateProduct = (id: string, productData: any) => {
-  return api.put(`/products/${id}`, productData);
+  // 1. Mock image upload to get URLs 
+  const imageUrls = mockImageUpload(productData.images);
+
+  // 2. Prepare data to send to the server
+  const dataToSend = {
+    ...productData,
+    images: imageUrls, 
+  };
+  
+  return api.put(`/products/${id}`, dataToSend);
 };
 
 export const deleteProduct = (id: string) => {
@@ -100,13 +130,6 @@ export const createChatRoom = (productId: string) => {
 export const getUserBookings = (userId: string) => {
   return api.get(`/bookings/user/${userId}`);
 };
-
-// --- NEW FUNCTION FOR USER STATS ---
-export const getUserStats = () => {
-  // Assuming a new endpoint exists for fetching regular user's dashboard stats (purchases, revenue, rating)
-  return api.get('/users/stats'); 
-};
-// ------------------------------------
 
 export const createBooking = (bookingData: any) => {
   return api.post('/bookings', bookingData);

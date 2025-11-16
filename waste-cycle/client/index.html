@@ -7,10 +7,10 @@
     <title>Waste-Cycle</title>
     <!-- 
       !!! สำคัญมาก !!!
-      ใส่ Google Maps API Key ของคุณตรงนี้แทนที่ YOUR_GOOGLE_MAPS_API_KEY
-      และต้องเปิดใช้งาน Maps JavaScript API และ Geocoding API ใน Google Cloud Console ด้วยครับ
+      Vite จะทำการแทนที่ %VITE_GOOGLE_MAPS_API_KEY% ด้วย key จากไฟล์ .env
+      ตอนรัน dev server และตอน build ครับ
     -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAPfTBWHeEn1Oi-DEkW2afcidFLaznmTvU&libraries=places"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=%VITE_GOOGLE_MAPS_API_KEY%&libraries=places"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { type User as FirebaseUser } from 'firebase/auth';
-// แก้ไข Paths โดยใช้ @/
+// --- FIX: Remove file extensions from imports ---
 import { Header } from './components/Header';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
@@ -30,7 +30,8 @@ import api, {
   deleteProduct,
   getChatRooms,
   createChatRoom,
-} from './apiServer'; // แก้ไข Path
+} from './apiServer'; // --- FIX: Remove file extension ---
+// --- END FIX ---
 import { Recycle } from 'lucide-react';
 
 export type UserRole = 'user' | 'admin' | 'seller';

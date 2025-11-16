@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { type User as FirebaseUser } from 'firebase/auth';
+// แก้ไข Paths โดยใช้ @/
 import { Header } from './components/Header';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
@@ -13,11 +15,29 @@ import { AdminPanel } from './components/AdminPanel';
 import { ChatPage } from './components/ChatPage';
 import { ProfilePage } from './components/ProfilePage';
 import { ChatDialog } from './components/ChatDialog';
+import api, {
+  setAuthToken,
+  onAuthChange,
+  getMyProfile,
+  loginUser,
+  logoutUser,
+  registerUser,
+  createProfile,
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getChatRooms,
+  createChatRoom,
+} from './apiServer'; // แก้ไข Path
+import { Recycle } from 'lucide-react';
 
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user' | 'admin' | 'seller';
 
+// แก้ไข: เพิ่ม 'export'
 export interface User {
   id: string;
+  uid: string;
   email: string;
   name: string;
   role: UserRole;
@@ -27,6 +47,7 @@ export interface User {
   avatar?: string;
 }
 
+// แก้ไข: เพิ่ม 'export' และเปลี่ยน 'location'
 export interface Post {
   id: string;
   userId: string;
@@ -36,7 +57,8 @@ export interface Post {
   quantity: number;
   price: number;
   unit: string;
-  location: string;
+  location: { lat: number; lng: number }; // <-- แก้ไข
+  address: string; // <-- เพิ่ม
   distance: number;
   verified: boolean;
   npk: { n: number; p: number; k: number };
@@ -51,6 +73,7 @@ export interface Post {
   sold?: boolean;
 }
 
+// แก้ไข: เพิ่ม 'export'
 export interface ChatRoom {
   id: string;
   postId: string;
@@ -64,188 +87,119 @@ export interface ChatRoom {
   unread: number;
 }
 
+interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: string;
+}
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [user, setUser] = useState<User | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({});
+  const [confirmedChatRooms, setConfirmedChatRooms] = useState<Set<string>>(new Set());
+  
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [chatPostId, setChatPostId] = useState<string | null>(null);
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [confirmedChatRooms, setConfirmedChatRooms] = useState<Set<string>>(new Set());
-  const [chatMessages, setChatMessages] = useState<Record<string, { id: string; senderId: string; text: string; timestamp: string; }[]>>({});
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   
-  // Posts state - includes all posts from all users
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: '1',
-      userId: '1',
-      title: 'มูลไก่อินทรีย์',
-      animalType: 'ไก่ไข่',
-      wasteType: 'มูลแห้ง',
-      quantity: 500,
-      price: 320,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มไก่ไข่, ภูเก็ต',
-      distance: 4.2,
-      verified: true,
-      npk: { n: 3.5, p: 3.0, k: 1.8 },
-      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
-      description: 'มูลไก่คุณภาพดี เก็บจากฟาร์มที่มีการจัดการที่ดี ปราศจากเชื้อโรค',
-      images: ['https://images.unsplash.com/photo-1691526756635-0ac8703f5fa8?w=800'],
-      farmName: 'ฟาร์มของฉัน',
-      contactPhone: '081-234-5678',
-      rating: 4.8,
-      reviewCount: 24,
-      createdDate: '2024-11-10',
-    },
-    {
-      id: '2',
-      userId: '2',
-      title: 'มูลโคนมพร้อมใช้',
-      animalType: 'โคนม',
-      wasteType: 'มูลหมัก',
-      quantity: 2000,
-      price: 250,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มโคนม, สุรินทร์',
-      distance: 8.3,
-      verified: true,
-      npk: { n: 2.5, p: 1.8, k: 2.1 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลโคหมักพร้อมใช้ คุณภาพดี เหมาะสำหรับปลูกพืชทุกชนิด',
-      images: ['https://images.unsplash.com/photo-1723174515335-7eb28e74c0cb?w=800'],
-      farmName: 'ฟาร์มโคนมสุรินทร์',
-      contactPhone: '082-345-6789',
-      rating: 4.7,
-      reviewCount: 32,
-      createdDate: '2024-11-08',
-    },
-    {
-      id: '3',
-      userId: '3',
-      title: 'มูลสุกรหมัก',
-      animalType: 'สุกร',
-      wasteType: 'มูลหมัก',
-      quantity: 800,
-      price: 200,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มสุกร, นครปฐม',
-      distance: 15.7,
-      verified: true,
-      npk: { n: 3.8, p: 3.2, k: 2.4 },
-      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
-      description: 'มูลสุกรหมัก ผ่านกระบวนการหมักที่ถูกต้อง ไม่มีกลิ่น',
-      images: ['https://images.unsplash.com/photo-1674880785058-2c98aff0a62f?w=800'],
-      farmName: 'ฟาร์มสุกรนครปฐม',
-      contactPhone: '083-456-7890',
-      rating: 4.6,
-      reviewCount: 18,
-      createdDate: '2024-11-05',
-    },
-    {
-      id: '4',
-      userId: '4',
-      title: 'มูลเป็ดอินทรีย์',
-      animalType: 'เป็ด',
-      wasteType: 'มูลแห้ง',
-      quantity: 600,
-      price: 280,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มเป็ด, ราชบุรี',
-      distance: 12.5,
-      verified: true,
-      npk: { n: 3.2, p: 2.8, k: 1.6 },
-      feedType: 'อาหารข้น (สูตรสำเร็จรูป)',
-      description: 'มูลเป็ดคุณภาพดี เหมาะสำหรับพืชผักทุกชนิด มีธาตุอาหารสูง',
-      images: ['https://images.unsplash.com/photo-1663834780891-4cda88ea2794?w=800'],
-      farmName: 'ฟาร์มเป็ดราชบุรี',
-      contactPhone: '084-567-8901',
-      rating: 4.5,
-      reviewCount: 15,
-      createdDate: '2024-11-12',
-    },
-    {
-      id: '5',
-      userId: '5',
-      title: 'มูลแพะออร์แกนิค',
-      animalType: 'แพะ',
-      wasteType: 'มูลหมัก',
-      quantity: 400,
-      price: 350,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มแพะ, เพชรบุรี',
-      distance: 18.9,
-      verified: true,
-      npk: { n: 2.8, p: 2.0, k: 1.7 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลแพะหมักสุก เหมาะสำหรับพืชผักสวนครัว ไม่มีกลิ่น',
-      images: ['https://images.unsplash.com/photo-1723625449728-40e7a4d968e7?w=800'],
-      farmName: 'ฟาร์มแพะเพชรบุรี',
-      contactPhone: '085-678-9012',
-      rating: 4.9,
-      reviewCount: 21,
-      createdDate: '2024-11-11',
-    },
-    {
-      id: '6',
-      userId: '6',
-      title: 'มูลแกะคุณภาพพรีเมี่ยม',
-      animalType: 'แกะ',
-      wasteType: 'มูลหมัก',
-      quantity: 350,
-      price: 380,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มแกะ, กาญจนบุรี',
-      distance: 22.3,
-      verified: true,
-      npk: { n: 3.0, p: 2.2, k: 1.8 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลแกะพรีเมี่ยม หมักสุก อุดมด้วยธาตุอาหาร เหมาะกับไม้ดอกไม้ประดับ',
-      images: ['https://images.unsplash.com/photo-1681154258782-d9c41ae2d6da?w=800'],
-      farmName: 'ฟาร์มแกะกาญจนบุรี',
-      contactPhone: '086-789-0123',
-      rating: 4.8,
-      reviewCount: 19,
-      createdDate: '2024-11-09',
-    },
-    {
-      id: '7',
-      userId: '7',
-      title: 'มูลกระบือหมักสุก',
-      animalType: 'กระบือ',
-      wasteType: 'มูลหมัก',
-      quantity: 1500,
-      price: 220,
-      unit: 'กก. / สัปดาห์',
-      location: 'ฟาร์มกระบือ, สุพรรณบุรี',
-      distance: 25.6,
-      verified: true,
-      npk: { n: 2.3, p: 1.6, k: 2.3 },
-      feedType: 'หญ้า/ฟาง',
-      description: 'มูลกระบือหมักสุก เหมาะสำหรับนาข้าว ไร่อ้อย และพืชไร่',
-      images: ['https://images.unsplash.com/photo-1566956884055-5034d746e52f?w=800'],
-      farmName: 'ฟาร์มกระบือสุพรรณบุรี',
-      contactPhone: '087-890-1234',
-      rating: 4.6,
-      reviewCount: 28,
-      createdDate: '2024-11-07',
-    },
-  ]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (userData: User) => {
-    setUser(userData);
+  const fetchAllData = useCallback(async () => {
+    if (!user) return;
+    try {
+      setError(null);
+      const [productsResponse, chatRoomsResponse] = await Promise.all([
+        getProducts(),
+        getChatRooms(),
+      ]);
+      setPosts(productsResponse.data.data || []);
+      setChatRooms(chatRoomsResponse.data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+      setError("ไม่สามารถดึงข้อมูลได้");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        try {
+          const token = await firebaseUser.getIdToken();
+          setAuthToken(token);
+          const response = await getMyProfile();
+          setUser(response.data.user);
+          setCurrentPage('dashboard');
+        } catch (err: any) {
+          // --- BEGIN EDIT ---
+          // นี่คือส่วนที่แก้ไข "การวิ่งแข่ง" ครับ
+          const isNotFoundError = err.response && 
+                                 err.response.data && 
+                                 err.response.data.message === 'Not authorized, user not found';
+          
+          if (isNotFoundError) {
+            // ถ้าใช่: ไม่ต้องทำอะไร (เพราะนี่คือการลงทะเบียนใหม่)
+            console.log("onAuthStateChanged: User not found in DB, assuming new registration. Waiting for createProfile...");
+          } else {
+            // ถ้าเป็น Error อื่น: (เช่น server ล่ม) ให้ Logout
+            console.error("Auth error:", err);
+            setUser(null);
+            setAuthToken(null);
+          }
+          // --- END EDIT ---
+        }
+      } else {
+        setUser(null);
+        setCurrentPage('landing');
+      }
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchAllData();
+    }
+  }, [user, fetchAllData]);
+
+  const handleLogin = async (email: string, password: string) => {
+    await loginUser(email, password);
+  };
+
+  const handleRegister = async (
+    email: string,
+    password: string,
+    profileData: { name: string; farmName?: string; role: 'user' | 'admin' }
+  ) => {
+    // 1. สร้าง User ใน Auth
+    const userCredential = await registerUser(email, password);
+    const token = await userCredential.user.getIdToken();
+    setAuthToken(token);
+    // 2. สร้างโปรไฟล์ใน DB (POST /api/users/profile)
+    const response = await createProfile(profileData);
+    // 3. ตั้งค่า User ใน React
+    setUser(response.data.user);
     setCurrentPage('dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutUser();
     setUser(null);
+    setPosts([]);
+    setChatRooms([]);
+    setChatMessages({});
+    setAuthToken(null);
     setCurrentPage('landing');
-    setPosts(posts.filter(p => p.userId !== user?.id)); // Keep other users' posts
   };
 
   const navigateTo = (page: string) => {
     setCurrentPage(page);
-    // Don't reset selectedPostId if we're editing
     if (page !== 'create-post') {
       setSelectedPostId(null);
     }
@@ -265,78 +219,76 @@ export default function App() {
     setCurrentPage('create-post');
   };
 
-  const handleCreatePost = (newPost: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => {
-    const post: Post = {
-      ...newPost,
-      id: Date.now().toString(),
-      userId: user!.id,
-      farmName: user!.farmName || user!.name,
-      rating: 0,
-      reviewCount: 0,
-      createdDate: new Date().toISOString(),
-    };
-    setPosts([...posts, post]);
-    navigateTo('marketplace');
+  const handleCreatePost = async (newPost: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => {
+    try {
+      await createProduct(newPost);
+      await fetchAllData();
+      navigateTo('marketplace');
+    } catch (err) {
+      console.error("Failed to create post:", err);
+      setError("ไม่สามารถสร้างโพสต์ได้");
+    }
   };
 
-  const handleUpdatePost = (postId: string, updatedData: Partial<Post>) => {
-    setPosts(posts.map(p => p.id === postId ? { ...p, ...updatedData } : p));
-    setSelectedPostId(null);
-    setIsEditingPost(false);
-    navigateTo('marketplace');
+  const handleUpdatePost = async (postId: string, updatedData: Partial<Post>) => {
+    try {
+      await updateProduct(postId, updatedData);
+      await fetchAllData();
+      setSelectedPostId(null);
+      setIsEditingPost(false);
+      navigateTo('marketplace');
+    } catch (err) {
+      console.error("Failed to update post:", err);
+      setError("ไม่สามารถอัปเดตโพสต์ได้");
+    }
   };
 
-  const handleDeletePost = (postId: string) => {
-    setPosts(posts.filter(p => p.id !== postId));
-    navigateTo('marketplace');
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await deleteProduct(postId);
+      await fetchAllData();
+      navigateTo('marketplace');
+    } catch (err) {
+      console.error("Failed to delete post:", err);
+      setError("ไม่สามารถลบโพสต์ได้");
+    }
   };
 
-  const handleOpenChat = (postId: string) => {
+  const handleOpenChat = async (postId: string) => {
+    try {
+      const response = await createChatRoom(postId);
+      const room = response.data.data;
+      if (!chatRooms.find(r => r.id === room.id)) {
+        setChatRooms(prev => [...prev, room]);
+      }
+      setSelectedRoomId(room.id);
+      navigateTo('chat');
+    } catch (err) {
+      console.error("Failed to open chat:", err);
+      setError("ไม่สามารถเริ่มแชทได้");
+    }
+  };
+  
+  const handleOpenChatDialog = (postId: string) => {
     setChatPostId(postId);
   };
 
   const handleCloseChat = () => {
     setChatPostId(null);
   };
-
-  const handleConfirmChat = (postId: string) => {
-    const post = posts.find(p => p.id === postId);
-    if (!post || !user) return;
-    
-    // สร้างห้องแชทใหม่แต่ไม่เปลี่ยนสถานะโพสต์
-    setChatRooms(prev => [...prev, {
-      id: Date.now().toString(),
-      postId: postId,
-      sellerId: post.userId,
-      buyerId: user.id,
-      sellerName: post.farmName,
-      buyerName: user.name,
-      farmName: post.farmName,
-      lastMessage: 'เริ่มการสนทนา',
-      timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
-      unread: 0,
-    }]);
-    setChatPostId(null);
-    navigateTo('chat');
-  };
-
+  
   const handleConfirmSale = (postId: string, roomId: string) => {
-    // เปลี่ยนสถานะโพสต์เป็น sold เมื่อยืนยันในหน้าแชท
     setPosts(posts.map(p => p.id === postId ? { ...p, sold: true } : p));
-    // เก็บสถานะว่าห้องนี้ยืนยันแล้ว
     setConfirmedChatRooms(prev => new Set([...prev, roomId]));
   };
 
   const handleCancelChat = (roomId: string) => {
-    // ลบห้องแชทออกจากรายการ
     setChatRooms(prev => prev.filter(room => room.id !== roomId));
-    // ลบข้อความแชทออก
     setChatMessages(prev => {
       const newMessages = { ...prev };
       delete newMessages[roomId];
       return newMessages;
     });
-    // ลบสถานะยืนยันถ้ามี
     setConfirmedChatRooms(prev => {
       const newSet = new Set(prev);
       newSet.delete(roomId);
@@ -344,12 +296,22 @@ export default function App() {
     });
   };
 
-  if (!user && currentPage === 'landing') {
-    return <LandingPage onGetStarted={() => setCurrentPage('login')} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Recycle className="w-16 h-16 text-green-600 animate-spin" />
+      </div>
+    );
   }
 
-  if (!user && currentPage === 'login') {
-    return <LoginPage onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />;
+  if (!user) {
+    if (currentPage === 'login') {
+      return <LoginPage onLogin={handleLogin} onBack={() => navigateTo('landing')} onRegisterClick={() => navigateTo('register')} />;
+    }
+    if (currentPage === 'register') {
+      return <RegisterPage onRegister={handleRegister} onBack={() => navigateTo('landing')} onLoginClick={() => navigateTo('login')} />;
+    }
+    return <LandingPage onGetStarted={() => navigateTo('login')} />;
   }
 
   const currentPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
@@ -360,32 +322,41 @@ export default function App() {
       <Header user={user} onLogout={handleLogout} onNavigate={navigateTo} currentPage={currentPage} />
       
       <main className="pt-16">
+        {error && (
+          <div className="container mx-auto px-4 py-2">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">เกิดข้อผิดพลาด: </strong>
+              <span className="block sm:inline">{error}</span>
+            </div>
+          </div>
+        )}
+        
         {currentPage === 'dashboard' && (
           <Dashboard 
-            user={user!} 
+            user={user} 
             onNavigate={navigateTo} 
-            posts={posts.filter(p => p.userId === user!.id)}
+            posts={posts.filter(p => p.userId === user.id)}
             allPosts={posts}
             onViewDetail={handleViewPostDetail}
             onEdit={handleEditPost}
             onDelete={handleDeletePost}
-            onChat={handleOpenChat}
+            onChat={handleOpenChatDialog}
           />
         )}
-        {currentPage === 'marketplace' && user?.role !== 'admin' && (
+        {currentPage === 'marketplace' && user.role !== 'admin' && (
           <Marketplace 
-            user={user!} 
+            user={user} 
             posts={posts}
             onViewDetail={handleViewPostDetail}
             onEdit={handleEditPost}
             onDelete={handleDeletePost}
-            onChat={handleOpenChat}
+            onChat={handleOpenChatDialog}
             chattingPostIds={new Set(chatRooms.map(room => room.postId))}
           />
         )}
-        {currentPage === 'create-post' && user?.role !== 'admin' && (
+        {currentPage === 'create-post' && user.role !== 'admin' && (
           <CreatePost 
-            user={user!} 
+            user={user} 
             onBack={() => navigateTo('marketplace')}
             onCreate={handleCreatePost}
             onUpdate={handleUpdatePost}
@@ -398,11 +369,11 @@ export default function App() {
             onBack={() => navigateTo('marketplace')}
             onEdit={() => handleEditPost(currentPost.id)}
             onDelete={() => handleDeletePost(currentPost.id)}
-            isMyPost={currentPost.userId === user?.id}
+            isMyPost={currentPost.userId === user.id}
             onChat={() => handleOpenChat(currentPost.id)}
           />
         )}
-        {currentPage === 'bookings' && user?.role !== 'admin' && <BookingPage user={user!} />}
+        {currentPage === 'bookings' && user.role !== 'admin' && <BookingPage user={user} />}
         {currentPage === 'fertilizer-advisor' && user.role !== 'admin' && (
           <FertilizerAdvisor 
             defaultTab="recommendation" 
@@ -432,10 +403,10 @@ export default function App() {
         {currentPage === 'circular-view' && user.role !== 'admin' && (
           <CircularEconomy />
         )}
-        {currentPage === 'admin' && user?.role === 'admin' && <AdminPanel />}
-        {currentPage === 'chat' && user?.role !== 'admin' && (
+        {currentPage === 'admin' && user.role === 'admin' && <AdminPanel />}
+        {currentPage === 'chat' && user.role !== 'admin' && (
           <ChatPage 
-            user={user!} 
+            user={user} 
             chatRooms={chatRooms}
             posts={posts}
             confirmedRoomIds={confirmedChatRooms}
@@ -446,15 +417,14 @@ export default function App() {
             onCancelChat={handleCancelChat}
           />
         )}
-        {currentPage === 'profile' && user?.role !== 'admin' && <ProfilePage user={user!} />}
+        {currentPage === 'profile' && user.role !== 'admin' && <ProfilePage user={user} />}
         
-        {/* Chat Dialog */}
         {chatPost && (
           <ChatDialog 
             post={chatPost}
-            currentUser={user!}
+            currentUser={user}
             onClose={handleCloseChat}
-            onConfirm={() => handleConfirmChat(chatPost.id)}
+            onConfirm={() => handleOpenChat(chatPost.id)}
           />
         )}
       </main>

@@ -1,17 +1,25 @@
-// server/src/routes/bookingRoutes.js
 import express from 'express';
 import {
   createBooking,
   getUserBookings,
-  updateBookingStatus
+  getBookingById,
+  updateBookingStatus,
 } from '../controllers/bookingController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { seller } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// All routes require authentication
-router.post('/', verifyToken, createBooking);
-router.get('/user/:userId', verifyToken, getUserBookings);
-router.put('/:id/status', verifyToken, updateBookingStatus);
+router.route('/')
+  .post(protect, createBooking);
+
+router.route('/user/:userId')
+  .get(protect, getUserBookings);
+
+router.route('/:id')
+  .get(protect, getBookingById);
+
+router.route('/:id/status')
+  .put(protect, seller, updateBookingStatus);
 
 export default router;

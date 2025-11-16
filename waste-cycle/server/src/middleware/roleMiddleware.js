@@ -1,32 +1,28 @@
-// server/src/middleware/roleMiddleware.js
-
-/**
- * Middleware สำหรับตรวจสอบ role ของผู้ใช้
- * @param {string[]} allowedRoles - Array ของ roles ที่อนุญาตให้เข้าถึง
- */
-export const requireRole = (allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions',
-        required: allowedRoles,
-        current: req.user.role
-      });
-    }
-
+const admin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
     next();
-  };
+  } else {
+    res.status(401);
+    next(new Error('Not authorized as an admin'));
+  }
 };
 
-// Helper functions สำหรับแต่ละ role
-export const requireBuyer = requireRole(['buyer', 'admin']);
-export const requireSeller = requireRole(['seller', 'admin']);
-export const requireAdmin = requireRole(['admin']);
+const seller = (req, res, next) => {
+  if (req.user && (req.user.role === 'seller' || req.user.role === 'admin')) {
+    next();
+  } else {
+    res.status(401);
+    next(new Error('Not authorized as a seller or admin'));
+  }
+};
+
+const user = (req, res, next) => {
+  if (req.user) {
+    next();
+  } else {
+    res.status(401);
+    next(new Error('Not authorized'));
+  }
+};
+
+export { admin, seller, user };

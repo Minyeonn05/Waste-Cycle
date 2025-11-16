@@ -1,15 +1,13 @@
-// server/src/routes/marketRoutes.js
 import express from 'express';
-import { getMarketPrices, updateMarketPrice } from '../controllers/marketController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
-import { requireAdmin } from '../middleware/roleMiddleware.js';
+import {
+  searchMarket,
+  getProductDetails,
+} from '../controllers/marketController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// API-19
-router.get('/price', getMarketPrices);
-
-// API-20
-router.post('/update', verifyToken, requireAdmin, updateMarketPrice);
+router.get('/search', searchMarket); // Public search
+router.get('/product/:id', getProductDetails); // Public view
 
 export default router;

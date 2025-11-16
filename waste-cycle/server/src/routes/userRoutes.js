@@ -1,27 +1,31 @@
-// server/src/routes/userRoutes.js
 import express from 'express';
 import {
-  createProfile, // 👈 🚨 [แก้ไข] 🚨
-  getMe,
+  getUserProfile,
+  createUserProfile,
+  updateUserProfile,
   getAllUsers,
-} from '../controllers/userController.js'; // 👈 (ไฟล์นี้ export 'createProfile')
-import { verifyToken } from '../middleware/authMiddleware.js';
-import { requireRole } from '../middleware/roleMiddleware.js';
+  getUserById,
+  updateUserRole,
+  deleteUser,
+} from '../controllers/userController.js';
+// แก้ไข: import ยามตัวใหม่เข้ามา
+import { protect, protectTokenOnly } from '../middleware/authMiddleware.js';
+import { admin } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// ---------------------------------
-// 🚀 (API-16) สร้างโปรไฟล์
-// 🚀 (API-17) ดึงโปรไฟล์
-// ---------------------------------
 router.route('/profile')
-  .post(verifyToken, createProfile) // 👈 🚨 [แก้ไข] 🚨
-  .get(verifyToken, getMe);
+  .get(protect, getUserProfile)
+  // แก้ไข: เปลี่ยนจาก protect -> protectTokenOnly
+  .post(protectTokenOnly, createUserProfile) 
+  .put(protect, updateUserProfile);
 
-// ---------------------------------
-// 🚀 (API-15) ดึงผู้ใช้ทั้งหมด (สำหรับ Admin)
-// ---------------------------------
 router.route('/')
-  .get(verifyToken, requireRole('admin'), getAllUsers);
+  .get(protect, admin, getAllUsers);
+
+router.route('/:id')
+  .get(protect, admin, getUserById)
+  .put(protect, admin, updateUserRole)
+  .delete(protect, admin, deleteUser);
 
 export default router;

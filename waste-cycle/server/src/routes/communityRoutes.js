@@ -1,27 +1,39 @@
-// server/src/routes/communityRoutes.js
 import express from 'express';
 import {
   getAllPosts,
-  getPostById,
   createPost,
+  getPostById,
   updatePost,
   deletePost,
+  addComment,
+  deleteComment,
   likePost,
-  commentOnPost
+  unlikePost,
 } from '../controllers/communityController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { admin } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getAllPosts);
-router.get('/:id', getPostById);
+router.route('/')
+  .get(getAllPosts)
+  .post(protect, createPost);
 
-// Protected routes
-router.post('/', verifyToken, createPost);
-router.put('/:id', verifyToken, updatePost);
-router.delete('/:id', verifyToken, deletePost);
-router.post('/:id/like', verifyToken, likePost);
-router.post('/:id/comment', verifyToken, commentOnPost);
+router.route('/:id')
+  .get(getPostById)
+  .put(protect, updatePost)
+  .delete(protect, deletePost);
+
+router.route('/:id/comments')
+  .post(protect, addComment);
+
+router.route('/:id/comments/:commentId')
+  .delete(protect, deleteComment);
+
+router.route('/:id/like')
+  .post(protect, likePost);
+
+router.route('/:id/unlike')
+  .post(protect, unlikePost);
 
 export default router;

@@ -1,216 +1,211 @@
-// server/src/controllers/communityController.js
+import asyncHandler from '../middleware/asyncHandler.js';
 import { db } from '../config/firebaseConfig.js';
-import asyncHandler from '../middleware/asyncHandler.js'; 
+import admin from 'firebase-admin'; // Required for FieldValue
 
-const postsCollection = db.collection('community_posts');
-
-// --- [เพิ่ม] Helper Function (ลดโค้ดซ้ำ) ---
-const getPostAndCheckOwnership = async (postId, userId) => {
-  const doc = await postsCollection.doc(postId).get();
-
-  if (!doc.exists) {
-    const error = new Error('Post not found');
-    error.status = 404;
-    throw error;
-  }
-
-  if (doc.data().userId !== userId) {
-    const error = new Error('Unauthorized to modify this post');
-    error.status = 403;
-    throw error;
-  }
-
-  return doc;
-};
-
-
-// ดึงโพสต์ทั้งหมด
-export const getAllPosts = asyncHandler(async (req, res, next) => {
-  const { limit = 20, category } = req.query;
-  
-  let query = postsCollection.orderBy('createdAt', 'desc');
-  if (category) query = query.where('category', '==', category);
-  query = query.limit(parseInt(limit));
-  
-  const snapshot = await query.get();
-  const posts = [];
-  snapshot.forEach(doc => {
-    posts.push({ id: doc.id, ...doc.data() });
-  });
-  
-  res.json({ success: true, count: posts.length, data: posts });
+// @desc    Get all community posts
+// @route   GET /api/community
+// @access  Public
+const getAllPosts = asyncHandler(async (req, res) => {
+  const postsSnapshot = await db.collection('communityPosts').orderBy('createdAt', 'desc').get();
+  const posts = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  res.status(200).json({ success: true, data: posts });
 });
 
-// ดึงโพสต์ตาม ID
-export const getPostById = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const doc = await postsCollection.doc(id).get();
-  
-  if (!doc.exists) {
-    const error = new Error('Post not found');
-    error.status = 404;
-    return next(error);
-  }
-  
-  await postsCollection.doc(id).update({
-    views: (doc.data().views || 0) + 1
-  });
-  
-  res.json({
-    success: true,
-    data: { id: doc.id, ...doc.data(), views: (doc.data().views || 0) + 1 }
-  });
-});
+// @desc    Create a new community post
+// @route   POST /api/community
+// @access  Private
+const createPost = asyncHandler(async (req, res) => {
+  const { title, content, tags } = req.body;
+  const user = req.user;
 
-// สร้างโพสต์ใหม่
-export const createPost = asyncHandler(async (req, res, next) => {
-  const { title, content, category, tags, images } = req.body;
-  
-  if (!title || !content) {
-    // 🚨 [แก้ไข]
-    return res.status(400).json({ success: false, error: 'กรุณาระบุหัวข้อและเนื้อหา' });
-  }
-  
-  const { uid, email, displayName } = req.user;
-  
-  const postData = {
-    title, content,
-    category: category || 'general',
+  const newPost = {
+    userId: user.uid,
+    authorName: user.name,
+    authorAvatar: user.avatar || '',
+    title,
+    content,
     tags: tags || [],
-    images: images || [],
-    userId: uid,
-    author: {
-      uid: uid,
-      email: email,
-      displayName: displayName || 'Anonymous'
-    },
-    likes: [], comments: [], views: 0,
+    likes: [],
+    comments: [],
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
   };
-  
-  const docRef = await postsCollection.add(postData);
-  
-  res.status(201).json({
-    success: true,
-    message: 'สร้างโพสต์สำเร็จ', // 🚨 [แก้ไข]
-    data: { id: docRef.id, ...postData }
-  });
+
+  const postRef = await db.collection('communityPosts').add(newPost);
+  res.status(201).json({ success: true, data: { id: postRef.id, ...newPost } });
 });
 
-// อัพเดตโพสต์
-export const updatePost = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  
-  await getPostAndCheckOwnership(id, req.user.uid);
-  
-  const updateData = {
-    ...req.body,
-    updatedAt: new Date().toISOString()
-  };
-  
-  delete updateData.userId;
-  delete updateData.author;
-  delete updateData.createdAt;
-  delete updateData.likes;
-  delete updateData.comments;
-  
-  await postsCollection.doc(id).update(updateData);
-  const updatedDoc = await postsCollection.doc(id).get();
-  
-  res.json({
-    success: true,
-    message: 'อัปเดตโพสต์สำเร็จ', // 🚨 [แก้ไข]
-    data: { id: updatedDoc.id, ...updatedDoc.data() }
-  });
-});
+// @desc    Get a single post by ID
+// @route   GET /api/community/:id
+// @access  Public
+const getPostById = asyncHandler(async (req, res) => {
+  const postId = req.params.id;
+  const postDoc = await db.collection('communityPosts').doc(postId).get();
 
-// ลบโพสต์
-export const deletePost = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  
-  await getPostAndCheckOwnership(id, req.user.uid);
-  
-  await postsCollection.doc(id).delete();
-  
-  res.json({
-    success: true,
-    message: 'ลบโพสต์สำเร็จ' // 🚨 [แก้ไข]
-  });
-});
-
-// กดไลค์โพสต์
-export const likePost = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const userId = req.user.uid;
-  
-  const doc = await postsCollection.doc(id).get();
-  if (!doc.exists) {
-    const error = new Error('Post not found');
-    error.status = 404;
-    return next(error);
+  if (!postDoc.exists) {
+    res.status(404);
+    throw new Error('Post not found');
   }
-  
-  const likes = doc.data().likes || [];
-  const hasLiked = likes.includes(userId);
-  
-  if (hasLiked) {
-    await postsCollection.doc(id).update({
-      likes: likes.filter(uid => uid !== userId)
-    });
-  } else {
-    await postsCollection.doc(id).update({
-      likes: [...likes, userId]
-    });
-  }
-  
-  const updatedDoc = await postsCollection.doc(id).get();
-  
-  res.json({
-    success: true,
-    message: hasLiked ? 'ยกเลิกถูกใจโพสต์' : 'ถูกใจโพสต์สำเร็จ', // 🚨 [แก้ไข]
-    data: { id: updatedDoc.id, likes: updatedDoc.data().likes }
-  });
+
+  res.status(200).json({ success: true, data: { id: postDoc.id, ...postDoc.data() } });
 });
 
-// แสดงความคิดเห็น
-export const commentOnPost = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
+// @desc    Update a post
+// @route   PUT /api/community/:id
+// @access  Private (Owner)
+const updatePost = asyncHandler(async (req, res) => {
+  const postId = req.params.id;
+  const { title, content, tags } = req.body;
+  const user = req.user;
+
+  const postRef = db.collection('communityPosts').doc(postId);
+  const postDoc = await postRef.get();
+
+  if (!postDoc.exists) {
+    res.status(404);
+    throw new Error('Post not found');
+  }
+
+  if (postDoc.data().userId !== user.uid) {
+    res.status(401);
+    throw new Error('User not authorized to update this post');
+  }
+
+  await postRef.update({
+    title,
+    content,
+    tags,
+    updatedAt: new Date().toISOString(),
+  });
+
+  res.status(200).json({ success: true, message: 'Post updated' });
+});
+
+// @desc    Delete a post
+// @route   DELETE /api/community/:id
+// @access  Private (Owner or Admin)
+const deletePost = asyncHandler(async (req, res) => {
+  const postId = req.params.id;
+  const user = req.user;
+
+  const postRef = db.collection('communityPosts').doc(postId);
+  const postDoc = await postRef.get();
+
+  if (!postDoc.exists) {
+    res.status(404);
+    throw new Error('Post not found');
+  }
+
+  if (postDoc.data().userId !== user.uid && user.role !== 'admin') {
+    res.status(401);
+    throw new Error('User not authorized to delete this post');
+  }
+
+  // TODO: Delete comments and likes (or handle via Firebase Functions)
+  await postRef.delete();
+
+  res.status(200).json({ success: true, message: 'Post deleted' });
+});
+
+// @desc    Add a comment to a post
+// @route   POST /api/community/:id/comments
+// @access  Private
+const addComment = asyncHandler(async (req, res) => {
+  const postId = req.params.id;
   const { text } = req.body;
-  const { uid, email, displayName } = req.user;
-  
-  if (!text) {
-    // 🚨 [แก้ไข]
-    return res.status(400).json({ success: false, error: 'กรุณาระบุข้อความคอมเมนต์' });
-  }
-  
-  const doc = await postsCollection.doc(id).get();
-  if (!doc.exists) {
-    const error = new Error('Post not found');
-    error.status = 404;
-    return next(error);
-  }
-  
+  const user = req.user;
+
+  const commentId = db.collection('communityPosts').doc().id; // Generate a unique ID
+
   const comment = {
-    id: Date.now().toString(),
+    id: commentId,
+    userId: user.uid,
+    authorName: user.name,
+    authorAvatar: user.avatar || '',
     text,
-    userId: uid,
-    author: {
-      uid: uid,
-      email: email,
-      displayName: displayName || 'Anonymous'
-    },
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
-  
-  const comments = doc.data().comments || [];
-  comments.push(comment);
-  
-  await postsCollection.doc(id).update({ comments });
-  
-  res.json({
-    success: true,
-    message: 'เพิ่มคอมเมนต์สำเร็จ', // 🚨 [แก้ไข]
-    data: comment
+
+  const postRef = db.collection('communityPosts').doc(postId);
+  await postRef.update({
+    comments: admin.firestore.FieldValue.arrayUnion(comment),
   });
+
+  res.status(201).json({ success: true, data: comment });
 });
+
+// @desc    Delete a comment
+// @route   DELETE /api/community/:id/comments/:commentId
+// @access  Private (Owner or Admin)
+const deleteComment = asyncHandler(async (req, res) => {
+  const { id: postId, commentId } = req.params;
+  const user = req.user;
+
+  const postRef = db.collection('communityPosts').doc(postId);
+  const postDoc = await postRef.get();
+
+  if (!postDoc.exists) {
+    res.status(404);
+    throw new Error('Post not found');
+  }
+
+  const post = postDoc.data();
+  const comment = post.comments.find(c => c.id === commentId);
+
+  if (!comment) {
+    res.status(404);
+    throw new Error('Comment not found');
+  }
+
+  if (comment.userId !== user.uid && user.role !== 'admin') {
+    res.status(401);
+    throw new Error('User not authorized to delete this comment');
+  }
+
+  await postRef.update({
+    comments: admin.firestore.FieldValue.arrayRemove(comment),
+  });
+
+  res.status(200).json({ success: true, message: 'Comment deleted' });
+});
+
+// @desc    Like a post
+// @route   POST /api/community/:id/like
+// @access  Private
+const likePost = asyncHandler(async (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.uid;
+
+  const postRef = db.collection('communityPosts').doc(postId);
+  await postRef.update({
+    likes: admin.firestore.FieldValue.arrayUnion(userId),
+  });
+
+  res.status(200).json({ success: true, message: 'Post liked' });
+});
+
+// @desc    Unlike a post
+// @route   POST /api/community/:id/unlike
+// @access  Private
+const unlikePost = asyncHandler(async (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.uid;
+
+  const postRef = db.collection('communityPosts').doc(postId);
+  await postRef.update({
+    likes: admin.firestore.FieldValue.arrayRemove(userId),
+  });
+
+  res.status(200).json({ success: true, message: 'Post unliked' });
+});
+
+export {
+  getAllPosts,
+  createPost,
+  getPostById,
+  updatePost,
+  deletePost,
+  addComment,
+  deleteComment,
+  likePost,
+  unlikePost
+};

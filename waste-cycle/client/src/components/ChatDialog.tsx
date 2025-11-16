@@ -1,6 +1,8 @@
 import { X, MessageCircle } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+// --- FIX: Use alias path to resolve components ---
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+// --- END FIX ---
 import type { Post, User } from '../App';
 
 interface ChatDialogProps {
@@ -37,12 +39,14 @@ export function ChatDialog({ post, currentUser, onClose, onConfirm }: ChatDialog
               <p className="font-medium mb-1">{post.title}</p>
               <p className="text-sm text-gray-600">{post.animalType} • ฿{post.price}/กก.</p>
             </div>
+            {/* --- FIX: Corrected the warning message --- */}
             <p className="text-sm text-gray-600 text-center">
               เมื่อยืนยันแล้ว จะเพิ่มการสนทนานี้ไปยังรายการแชทของคุณ
             </p>
-            <p className="text-sm font-medium text-red-600 text-center">
-              ⚠️ เมื่อยืนยันแล้ว โพสต์นี้จะเปลี่ยนสถานะเป็น "ขายแล้ว"
+            <p className="text-sm font-medium text-gray-500 text-center">
+              คุณสามารถ "ยืนยันการขาย" ได้จากภายในหน้าแชท
             </p>
+            {/* --- END FIX --- */}
           </div>
 
           <div className="flex gap-3 mt-6">

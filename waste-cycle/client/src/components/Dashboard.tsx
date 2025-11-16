@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // <-- Added useEffect
 import { Package, ShoppingCart, TrendingUp, Star, Eye, Edit, Trash2, MessageCircle, MapPin, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -7,7 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from './ui/input';
 import type { User, Post } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import mapImage from 'figma:asset/3fe9bbf35753fe94247abda4cbb319a6efd00b9f.png';
+// import mapImage from './asset/images/3fe9bbf35753fe94247abda4cbb319a6efd00b9f.png'; // <-- No longer needed
+
+// --- GOOGLE MAPS API IMPORTS ---
+import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from '@react-google-maps/api';
+import apiServer, { getUserStats } from '../apiServer'; // <-- Added getUserStats, Imported apiServer for AdminDashboard
+// --- END GOOGLE MAPS API IMPORTS ---
 
 interface DashboardProps {
   user: User;
@@ -20,6 +25,29 @@ interface DashboardProps {
   allPosts?: Post[]; // รับโพสต์ทั้งหมดจากตลาดกลาง
 }
 
+// --- NEW INTERFACE FOR USER STATS ---
+interface UserStats {
+  totalPurchases: number;
+  totalRevenue: number;
+  averageRating: number;
+}
+// --- END NEW INTERFACE ---
+
+// --- GOOGLE MAPS API CONFIG ---
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%', // Will fill the parent div
+  borderRadius: '0.5rem'
+};
+
+const defaultCenter = {
+  lat: 18.7883, // Chiang Mai
+  lng: 98.9853
+};
+
+const mapLibraries: ('places')[] = ["places"]; // Explicitly type the array
+// --- END GOOGLE MAPS API CONFIG ---
+
 export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDelete, onChat, allPosts = [] }: DashboardProps) {
   const [searchFilters, setSearchFilters] = useState({
     wasteType: 'all',
@@ -28,7 +56,24 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
   });
   const [searchResults, setSearchResults] = useState<Post[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [showMarkers, setShowMarkers] = useState(false);
+  // const [showMarkers, setShowMarkers] = useState(false); // <-- No longer needed, map will show them
+
+  // --- USER DASHBOARD STATS STATE ---
+  const [userStats, setUserStats] = useState<UserStats>({
+    totalPurchases: 0,
+    totalRevenue: 0,
+    averageRating: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  // --- END USER DASHBOARD STATS STATE ---
+  
+  // --- GOOGLE MAPS API STATE ---
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY", // !!! IMPORTANT: Add your API key here
+    libraries: mapLibraries,
+  });
+  const [selectedMarker, setSelectedMarker] = useState<Post | null>(null);
+  // --- END GOOGLE MAPS API STATE ---
 
   const handleDelete = (postId: string) => {
     if (confirm('คุณต้องการลบโพสต์นี้หรือไม่?')) {
@@ -59,8 +104,85 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
 
     setSearchResults(filtered);
     setHasSearched(true);
-    setShowMarkers(true);
+    // setShowMarkers(true); // <-- No longer needed
   };
+  
+  // Helper function for formatting revenue (e.g., 128000 -> ฿128K)
+  const formatRevenue = (amount: number): string => {
+    if (amount >= 1000000) {
+      return `฿${(amount / 1000000).toFixed(1)}M`;
+    }
+    if (amount >= 1000) {
+      return `฿${(amount / 1000).toFixed(0)}K`;
+    }
+    return `฿${amount}`;
+  };
+
+  // --- FETCH USER STATS EFFECT ---
+  useEffect(() => {
+    // Only fetch for regular users, admin uses AdminDashboard and has its own fetch
+    if (user.role !== 'admin') {
+      const fetchUserStats = async () => {
+        try {
+          setStatsLoading(true);
+          const response = await getUserStats(); 
+          
+          if (response.data && response.data.success) {
+            setUserStats(response.data.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user stats:", error);
+          // Set to default or 0 on error if necessary
+          setUserStats({ totalPurchases: 0, totalRevenue: 0, averageRating: 0 });
+        } finally {
+          setStatsLoading(false);
+        }
+      };
+
+      fetchUserStats();
+    }
+  }, [user.role]); 
+  // --- END FETCH USER STATS EFFECT ---
+
+  // --- GOOGLE MAPS RENDER FUNCTION ---
+  const renderMap = () => {
+    if (loadError) return <div className="p-4 text-red-500">Error loading maps. Please check your API key.</div>;
+    if (!isLoaded) return <div className="p-4">Loading Map...</div>;
+
+    // Use search results if available, otherwise show all posts
+    const markersToShow = hasSearched ? searchResults : allPosts;
+
+    return (
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={defaultCenter}
+        zoom={12}
+      >
+        {markersToShow.map((post) => (
+          <MarkerF
+            key={post.id}
+            position={{ lat: post.location.lat, lng: post.location.lng }} // Assuming post.location is { lat: number, lng: number }
+            onClick={() => setSelectedMarker(post)}
+          />
+        ))}
+
+        {selectedMarker && (
+          <InfoWindowF
+            position={{ lat: selectedMarker.location.lat, lng: selectedMarker.location.lng }}
+            onCloseClick={() => setSelectedMarker(null)}
+          >
+            <div className="p-2 max-w-xs">
+              <h4 className="font-bold text-sm mb-1">{selectedMarker.title}</h4>
+              <p className="text-xs mb-1">{selectedMarker.address}</p>
+              <p className="text-xs mb-2 font-semibold">฿{selectedMarker.price} / {selectedMarker.unit}</p>
+              <Button size="xs" onClick={() => onViewDetail(selectedMarker.id)}>ดูรายละเอียด</Button>
+            </div>
+          </InfoWindowF>
+        )}
+      </GoogleMap>
+    );
+  };
+  // --- END GOOGLE MAPS RENDER FUNCTION ---
 
   if (user.role === 'admin') {
     return <AdminDashboard onNavigate={onNavigate} />;
@@ -75,47 +197,15 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
           <p className="text-gray-600">ยินดีต้อนรับสู่แดชบอร์ด</p>
         </div>
 
-        {/* Map Section - Moved to Top */}
+        {/* Map Section - NOW USING GOOGLE MAPS */}
         <Card className="mb-8 overflow-hidden">
           <CardContent className="p-0">
-            {/* Map Image */}
+            {/* Map Container */}
             <div className="relative h-64 md:h-80 bg-gray-100">
-              <img 
-                src={mapImage} 
-                alt="Map" 
-                className="w-full h-full object-cover"
-              />
-              
-              {/* View Larger Map Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="absolute top-4 left-4 bg-white hover:bg-gray-50"
-              >
-                View larger map
-              </Button>
-
-              {/* Simulated Markers */}
-              {showMarkers && searchResults.length > 0 && (
-                <>
-                  {searchResults.slice(0, 5).map((post, index) => (
-                    <div
-                      key={post.id}
-                      className="absolute bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs shadow-lg cursor-pointer hover:bg-green-700 transition-colors"
-                      style={{
-                        top: `${20 + index * 15}%`,
-                        left: `${30 + index * 10}%`
-                      }}
-                      title={post.title}
-                    >
-                      {index + 1}
-                    </div>
-                  ))}
-                </>
-              )}
+              {renderMap()} {/* <-- This calls the real map */}
             </div>
             
-            {/* Filter Section */}
+            {/* Filter Section (UI Unchanged) */}
             <div className="p-6 bg-white border-t">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 {/* ประเภทของเสีย */}
@@ -171,7 +261,7 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
           </CardContent>
         </Card>
 
-        {/* Search Results Section */}
+        {/* Search Results Section (UI Unchanged) */}
         {hasSearched && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -245,7 +335,7 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
                     {/* Location */}
                     <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
                       <MapPin className="w-4 h-4" />
-                      <span>{post.location} · {post.distance.toFixed(1)} กม.</span>
+                      <span>{post.location.address} · {post.distance.toFixed(1)} กม.</span> {/* Assuming location is an object with address */}
                     </div>
 
                     {/* NPK Values */}
@@ -311,12 +401,12 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
           </div>
         )}
 
-        {/* Quick Stats */}
+        {/* Quick Stats (UI Unchanged - Now Real Data) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6 text-center">
               <Package className="w-10 h-10 text-blue-600 mx-auto mb-2" />
-              <p className="text-3xl mb-1">{posts.length}</p>
+              <p className="text-3xl mb-1">{posts.length}</p> {/* โพสต์ของฉัน: Data is correct using props */}
               <p className="text-sm text-gray-600">โพสต์ของฉัน</p>
             </CardContent>
           </Card>
@@ -324,7 +414,7 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6 text-center">
               <ShoppingCart className="w-10 h-10 text-green-600 mx-auto mb-2" />
-              <p className="text-3xl mb-1">8</p>
+              <p className="text-3xl mb-1">{statsLoading ? '...' : userStats.totalPurchases}</p> {/* การซื้อ: ใช้ข้อมูลจริง */}
               <p className="text-sm text-gray-600">การซื้อ</p>
             </CardContent>
           </Card>
@@ -332,7 +422,7 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6 text-center">
               <TrendingUp className="w-10 h-10 text-purple-600 mx-auto mb-2" />
-              <p className="text-3xl mb-1">฿128K</p>
+              <p className="text-3xl mb-1">{statsLoading ? '...' : formatRevenue(userStats.totalRevenue)}</p> {/* รายได้: ใช้ข้อมูลจริง พร้อมจัดรูปแบบ */}
               <p className="text-sm text-gray-600">รายได้</p>
             </CardContent>
           </Card>
@@ -340,13 +430,13 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6 text-center">
               <Star className="w-10 h-10 text-yellow-600 mx-auto mb-2" />
-              <p className="text-3xl mb-1">4.8</p>
+              <p className="text-3xl mb-1">{statsLoading ? '...' : userStats.averageRating.toFixed(1)}</p> {/* คะแนนเฉลี่ย: ใช้ข้อมูลจริง พร้อมกำหนดทศนิยม 1 ตำแหน่ง */}
               <p className="text-sm text-gray-600">คะแนนเฉลี่ย</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* My Posts Section */}
+        {/* My Posts Section (UI Unchanged) */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl">โพสต์ของฉัน ({posts.length})</h2>
@@ -395,7 +485,7 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
                   {/* Location */}
                   <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
                     <MapPin className="w-4 h-4" />
-                    <span>{post.location} · {post.distance.toFixed(0)} กม.</span>
+                    <span>{post.location.address} · {post.distance.toFixed(0)} กม.</span> {/* Assuming location is an object with address */}
                   </div>
 
                   {/* NPK Values */}
@@ -469,7 +559,7 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
           )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions (UI Unchanged) */}
         <Card>
           <CardHeader>
             <CardTitle>เมนูด่วน</CardTitle>
@@ -516,7 +606,40 @@ export function Dashboard({ user, onNavigate, posts, onViewDetail, onEdit, onDel
   );
 }
 
+// --- ADMIN DASHBOARD - NOW WITH REAL DATA ---
 function AdminDashboard({ onNavigate }: { onNavigate: (page: string) => void }) {
+  
+  // State for holding the fetched data
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalPosts: 0,
+    totalBookings: 0,
+    // NOTE: "Pending" data is not provided by the current server endpoint.
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    const fetchAdminStats = async () => {
+      try {
+        setLoading(true);
+        // This endpoint exists and is for logged-in users
+        const response = await apiServer.get('/api/admin/dashboard');
+        
+        if (response.data && response.data.success) {
+          // The controller provides totalUsers, totalPosts, and totalBookings
+          setStats(response.data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminStats();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
@@ -526,31 +649,31 @@ function AdminDashboard({ onNavigate }: { onNavigate: (page: string) => void }) 
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-sm text-gray-600 mb-2">ผู้ใช้ทั้งหมด</p>
-              <p className="text-3xl mb-1">248</p>
-              <p className="text-sm text-green-600">+18 เดือนนี้</p>
+              <p className="text-3xl mb-1">{loading ? '...' : stats.totalUsers}</p>
+              <p className="text-sm text-gray-500">ทั้งหมด</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-sm text-gray-600 mb-2">โพสต์ทั้งหมด</p>
-              <p className="text-3xl mb-1">342</p>
-              <p className="text-sm text-green-600">+24 เดือนนี้</p>
+              <p className="text-3xl mb-1">{loading ? '...' : stats.totalPosts}</p>
+              <p className="text-sm text-gray-500">ทั้งหมด</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-sm text-gray-600 mb-2">ธุรกรรม</p>
-              <p className="text-3xl mb-1">156</p>
-              <p className="text-sm text-green-600">+12 เดือนนี้</p>
+              <p className="text-3xl mb-1">{loading ? '...' : stats.totalBookings}</p>
+              <p className="text-sm text-gray-500">ทั้งหมด</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-sm text-gray-600 mb-2">รอยืนยัน</p>
-              <p className="text-3xl mb-1">7</p>
+              <p className="text-3xl mb-1">7</p> {/* <-- Mock data (server doesn't provide this) */}
               <p className="text-sm text-yellow-600">ต้องดำเนินการ</p>
             </CardContent>
           </Card>

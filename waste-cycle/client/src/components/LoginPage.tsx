@@ -1,35 +1,38 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button.tsx';
+import { Input } from './ui/input.tsx';
+import { Label } from './ui/label.tsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card.tsx';
 import { ArrowLeft, Recycle } from 'lucide-react';
-import type { User, UserRole } from '../App';
+import type { User } from '../App';
 
 interface LoginPageProps {
-  onLogin: (user: User) => void;
+  onLogin: (email: string, password: string) => Promise<void>;
   onBack: () => void;
 }
 
-export function LoginPage({ onLogin, onBack }: LoginPageProps) {
+export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const mockUser: User = {
-      id: '1',
-      email: email,
-      name: 'สมชาย เกษตรกร',
-      role: email.includes('admin') ? 'admin' : 'user',
-      farmName: email.includes('admin') ? undefined : 'ฟาร์มของฉัน',
-      verified: true,
-      avatar: 'https://images.unsplash.com/photo-1759755487703-91f22c31bfbd?w=200',
-    };
-    
-    onLogin(mockUser);
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await onLogin(email, password);
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      if (err.code === 'auth/invalid-credential') {
+        setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      } else {
+        setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+      }
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -85,13 +88,23 @@ export function LoginPage({ onLogin, onBack }: LoginPageProps) {
                 <Label htmlFor="admin" className="cursor-pointer">เข้าสู่ระบบในฐานะผู้ดูแลระบบ</Label>
               </div>
 
-              <Button type="submit" className="w-full">
-                เข้าสู่ระบบ
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
               </Button>
             </form>
 
             <div className="mt-4 text-center text-sm text-gray-600">
-              <p>สำหรับทดสอบ: ใช้อีเมลและรหัสผ่านใดก็ได้</p>
+              <p>
+                ยังไม่มีบัญชี?{' '}
+                <button
+                  type="button"
+                  onClick={onRegisterClick}
+                  className="text-green-600 hover:text-green-700 hover:underline"
+                  disabled={isLoading}
+                >
+                  ลงทะเบียน
+                </button>
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -1,96 +1,150 @@
-// server/src/controllers/userController.js
-import { db } from '../config/firebaseConfig.js';
 import asyncHandler from '../middleware/asyncHandler.js';
+import { db, auth } from '../config/firebaseConfig.js';
 
-const usersCollection = db.collection('users');
+const getUserProfile = asyncHandler(async (req, res) => {
+  const user = req.user; 
+  if (user) {
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        uid: user.uid,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        farmName: user.farmName || '',
+        location: user.location || null,
+        verified: user.verified || false,
+        avatar: user.avatar || '',
+      },
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
 
-/**
- * @desc    Create or Update user profile (API-16)
- * @route   POST /api/users/profile
- * @access  Private
- */
-export const createProfile = asyncHandler(async (req, res, next) => {
+const createUserProfile = asyncHandler(async (req, res) => {
   const { name, farmName, role } = req.body;
+  const user = req.user;
 
-  if (!name) {
-    return res.status(400).json({ success: false, error: 'กรุณาระบุชื่อ' });
+  if (!user) {
+    res.status(401);
+    throw new Error('Not authorized');
   }
 
-  // ข้อมูลโปรไฟล์ (อ้างอิงจาก App.tsx)
-  const newProfile = {
-    uid: req.user.uid,
-    email: req.user.email,
-    name: name,
-    role: role || 'user',
+  const userRef = db.collection('users').doc(user.uid);
+  const userDoc = await userRef.get();
+
+  if (userDoc.exists) {
+    res.status(400);
+    throw new Error('User profile already exists');
+  }
+
+  const newUserProfile = {
+    uid: user.uid,
+    email: user.email, 
+    name,
     farmName: farmName || '',
+    role: role || 'user',
     verified: false,
-    photoURL: req.user.photoURL || null,
     createdAt: new Date().toISOString(),
   };
 
-  // ใช้ .set() แทน .add() เพื่อให้แน่ใจว่าเป็นการสร้าง/ทับที่ UID เดิม
-  await usersCollection.doc(req.user.uid).set(newProfile);
-  
+  await userRef.set(newUserProfile);
+
   res.status(201).json({
     success: true,
-    data: newProfile
+    user: {
+      id: user.uid,
+      ...newUserProfile,
+    },
   });
 });
 
-/**
- * @desc    Get current user profile (API-17)
- * @route   GET /api/users/profile
- * @access  Private
- */
-export const getMe = asyncHandler(async (req, res, next) => {
-  const userDocRef = usersCollection.doc(req.user.uid);
-  const userDoc = await userDocRef.get();
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const { name, farmName, location } = req.body;
+  const user = req.user;
+
+  if (!user) {
+    res.status(401);
+    throw new Error('Not authorized');
+  }
+
+  const userRef = db.collection('users').doc(user.uid);
+  const userDoc = await userRef.get();
 
   if (!userDoc.exists) {
-    // 🚨 [แก้ไข] 👈 นี่คือจุดที่แก้ปัญหา 🚨
-    // ถ้า User มี Auth (req.user) แต่ไม่มี Profile ใน DB... ให้สร้างเลย
-    console.warn(`[getMe] User ${req.user.uid} not found in Firestore. Creating new profile...`);
-    
-    // ดึงข้อมูลพื้นฐานจาก Token (ที่ middleware ส่งมา)
-    const newProfile = {
-      uid: req.user.uid,
-      email: req.user.email,
-      name: req.user.displayName || req.user.email.split('@')[0] || 'New User',
-      role: req.user.role || 'user',
-      farmName: '',
-      verified: false,
-      photoURL: req.user.photoURL || null,
-      createdAt: new Date().toISOString(),
-    };
+    res.status(44);
+    throw new Error('User profile not found');
+  }
 
-    // สร้างโปรไฟล์ใหม่ใน Firestore
-    await userDocRef.set(newProfile);
+  const updatedProfile = {
+    name: name || userDoc.data().name,
+    farmName: farmName || userDoc.data().farmName,
+    location: location || userDoc.data().location,
+    updatedAt: new Date().toISOString(),
+  };
 
-    // ส่งโปรไฟล์ใหม่นี้กลับไปให้ Client
-    res.status(200).json({
-      success: true,
-      data: newProfile
-    });
+  await userRef.update(updatedProfile);
+  const newDoc = await userRef.get();
 
+  res.status(200).json({
+    success: true,
+    user: newDoc.data(),
+  });
+});
+
+const getAllUsers = asyncHandler(async (req, res) => {
+  const usersSnapshot = await db.collection('users').get();
+  const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  res.status(200).json({ success: true, count: users.length, users });
+});
+
+const getUserById = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  const userDoc = await db.collection('users').doc(userId).get();
+
+  if (userDoc.exists) {
+    res.status(200).json({ success: true, user: { id: userDoc.id, ...userDoc.data() } });
   } else {
-    // 🚨 (ของเดิม) ถ้า User มี Profile อยู่แล้ว ก็ส่งกลับไปปกติ
-    res.status(200).json({
-      success: true,
-      data: userDoc.data()
-    });
+    res.status(404);
+    throw new Error('User not found');
   }
 });
 
-/**
- * @desc    Get all users (Admin only)
- * @route   GET /api/users
- * @access  Private/Admin
- */
-export const getAllUsers = asyncHandler(async (req, res, next) => {
-  const snapshot = await usersCollection.get();
-  const users = [];
-  snapshot.forEach(doc => {
-    users.push({ id: doc.id, ...doc.data() });
-  });
-  res.status(200).json({ success: true, count: users.length, data: users });
+const updateUserRole = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  const { role } = req.body;
+
+  if (!role) {
+    res.status(400);
+    throw new Error('Role is required');
+  }
+
+  const userRef = db.collection('users').doc(userId);
+  await userRef.update({ role });
+
+  await auth.setCustomUserClaims(userId, { role });
+
+  res.status(200).json({ success: true, message: 'User role updated' });
 });
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  await db.collection('users').doc(userId).delete();
+  await auth.deleteUser(userId);
+
+  res.status(200).json({ success: true, message: 'User deleted' });
+});
+
+export {
+  getUserProfile,
+  createUserProfile,
+  updateUserProfile,
+  getAllUsers,
+  getUserById,
+  updateUserRole,
+  deleteUser,
+};

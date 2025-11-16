@@ -1,64 +1,90 @@
-// server/src/middleware/authMiddleware.js
-import { auth, db } from '../config/firebaseConfig.js';
+import asyncHandler from './asyncHandler.js';
+import admin, { db } from '../config/firebaseConfig.js';
+// --- FIX: Remove Client SDK imports ---
+// import { collection, query, where, getDocs } from 'firebase/firestore';
 
-export const verifyToken = async (req, res, next) => {
+const protect = asyncHandler(async (req, res, next) => {
+  let token;
+
+  // Read the token from the Authorization header
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    res.status(401);
+    throw new Error('ไม่ได้รับอนุญาต, ไม่มี token');
+  }
+
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ success: false, error: 'No token provided', code: 'NO_TOKEN' });
-    }
-    
-    const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth.verifyIdToken(token, true);
+    // Verify token with Firebase Admin
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
 
-    // 2. ดึงข้อมูล "พื้นฐาน" จาก Token
-    const baseUser = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      emailVerified: decodedToken.email_verified,
-      role: decodedToken.role || 'user'
+    // --- FIX: Fetch user profile from Firestore ---
+    // Replaced the Client SDK query with the Admin SDK equivalent
+    
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      // This case handles if auth is valid but user profile isn't in DB
+      res.status(401);
+      throw new Error('ไม่ได้รับอนุญาต, ไม่พบข้อมูลผู้ใช้');
+    }
+
+    // Attach the user data from Firestore to the request object
+    req.user = {
+      id: userDoc.id, // Add the document ID (which is the uid)
+      ...userDoc.data() // Spread the fields from the document (name, email, role, uid, etc.)
     };
+    // --- END FIX ---
 
-    // 3. "พยายาม" ดึงโปรไฟล์จาก Firestore
-    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
-    
-    if (userDoc.exists) {
-      // 4A. ถ้ามีโปรไฟล์: ใช้ข้อมูลจากโปรไฟล์
-      const firestoreData = userDoc.data();
-      req.user = {
-        ...baseUser,
-        ...firestoreData,
-        role: firestoreData.role || baseUser.role
-      };
-    } else {
-      // 4B. 🚨 ถ้าไม่มีโปรไฟล์ (เช่น ตอนกำลังจะสร้าง):
-      // ส่งข้อมูลพื้นฐานจาก Token ไปให้ Controller
-      req.user = baseUser;
-    }
-    
-    console.log(`✅ Auth Success: ${req.user.email} (${req.user.uid}) [Role: ${req.user.role}]`);
     next();
-
   } catch (error) {
-    console.error('❌ Token verification error:', error.code, error.message);
-    return res.status(401).json({
-      success: false,
-      error: 'Authentication failed',
-      code: 'AUTH_FAILED',
-      message: error.message
-    });
+    console.error('Token verification failed:', error);
+    res.status(401);
+    throw new Error('ไม่ได้รับอนุญาต, token ไม่ถูกต้อง');
+  }
+});
+
+// This middleware just verifies the token and attaches the UID
+// Used for creating a profile (protectTokenOnly)
+const protectTokenOnly = asyncHandler(async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    res.status(401);
+    throw new Error('ไม่ได้รับอนุญาต, ไม่มี token');
+  }
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    // Attach minimal auth info (uid and email)
+    req.user = {
+      id: decodedToken.uid,
+      email: decodedToken.email,
+    };
+    next();
+  } catch (error) {
+    res.status(401);
+    throw new Error('ไม่ได้รับอนุญาต, token ไม่ถูกต้อง');
+  }
+});
+
+
+// Admin middleware
+const adminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403); // Forbidden
+    throw new Error('ไม่ได้รับอนุญาต, ต้องการสิทธิ์ผู้ดูแลระบบ');
   }
 };
 
-export const requireOwnership = (resourceUserIdField = 'userId') => {
-  return async (req, res, next) => {
-    const resourceId = req.params.id;
-    if (!resourceId) {
-      return res.status(400).json({ success: false, error: 'Resource ID is required' });
-    }
-    req.resourceUserIdField = resourceUserIdField;
-    req.isOwnershipRequired = true;
-    next();
-  };
-};
+export { protect, protectTokenOnly, adminOnly };

@@ -1,26 +1,23 @@
-// server/src/routes/productRoutes.js
 import express from 'express';
-import { 
+import {
   getAllProducts,
   createProduct,
   getProductById,
   updateProduct,
   deleteProduct,
-  searchProducts
 } from '../controllers/productController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
-import { requireSeller } from '../middleware/roleMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { seller } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getAllProducts);
-router.get('/search', searchProducts);
-router.get('/:id', getProductById);
+router.route('/')
+  .get(getAllProducts) // Public route
+  .post(protect, seller, createProduct);
 
-// Protected routes (seller only for create)
-router.post('/', verifyToken, requireSeller, createProduct);
-router.put('/:id', verifyToken, updateProduct);
-router.delete('/:id', verifyToken, deleteProduct);
+router.route('/:id')
+  .get(getProductById) // Public route
+  .put(protect, seller, updateProduct)
+  .delete(protect, seller, deleteProduct);
 
 export default router;

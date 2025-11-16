@@ -4,7 +4,6 @@ import { type User as FirebaseUser } from 'firebase/auth';
 import { Header } from './components/Header';
 import { LandingPage } from './components/LandingPage';
 import { LoginPage } from './components/LoginPage';
-import { RegisterPage } from './components/RegisterPage';
 import { Dashboard } from './components/Dashboard';
 import { Marketplace } from './components/Marketplace';
 import { CreatePost } from './components/CreatePost';

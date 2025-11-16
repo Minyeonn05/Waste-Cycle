@@ -128,17 +128,45 @@ const getPosts = asyncHandler(async (req, res) => {
     });
 });
 
-// เพิ่มฟังก์ชันสำหรับอัปเดตโพสต์ (เผื่อใช้จาก editingPost)
+/**
+ * @desc    Update a community post by ID
+ * @route   PUT /api/community/posts/:id
+ * @access  Private (Requires protect middleware)
+ */
 const updatePost = asyncHandler(async (req, res) => {
     const postId = req.params.id;
     const updateData = req.body;
     const user = req.user;
 
-    // ... (Implement validation and update logic similar to createPost, checking if user.id matches post.userId) ...
-    // สำหรับการแก้ไขในตอนนี้ จะถือว่ามีการบันทึกสำเร็จ
-    
-    // Mock update: 
     const postRef = db.collection('posts').doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+        res.status(404);
+        throw new Error('ไม่พบโพสต์ที่ต้องการแก้ไข');
+    }
+    
+    // Authorization Check: ต้องเป็นเจ้าของโพสต์เท่านั้นที่แก้ไขได้
+    if (postDoc.data().userId !== user.id) {
+        res.status(403);
+        throw new Error('ไม่ได้รับอนุญาตให้แก้ไขโพสต์นี้');
+    }
+    
+    // Basic validation for numbers
+    if (updateData.quantity && (isNaN(parseFloat(updateData.quantity)) || parseFloat(updateData.quantity) <= 0)) {
+        res.status(400);
+        throw new Error('ปริมาณต้องเป็นตัวเลขที่ถูกต้อง');
+    }
+    if (updateData.price && (isNaN(parseFloat(updateData.price)) || parseFloat(updateData.price) < 0)) {
+        res.status(400);
+        throw new Error('ราคาต้องเป็นตัวเลขที่ถูกต้อง');
+    }
+    if (updateData.animalType && !ALLOWED_ANIMAL_TYPES_VALUES.includes(updateData.animalType)) {
+        res.status(400);
+        throw new Error(`ประเภทสัตว์ไม่ถูกต้อง ต้องเป็น: ${ALLOWED_ANIMAL_TYPES_VALUES.join(', ')} เท่านั้น`);
+    }
+
+    // Perform update
     await postRef.update({
         ...updateData,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),

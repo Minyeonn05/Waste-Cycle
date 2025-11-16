@@ -50,7 +50,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/waste', wasteRoutes);
 app.use('/api/visualization', visualizationRoutes);
 app.use('/api/analyze', analyzeRoutes);
-
 app.use(notFound);
 app.use(errorHandler);
 

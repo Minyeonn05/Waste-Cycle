@@ -1,59 +1,69 @@
+// waste-cycle/server/src/controllers/productController.js
+
 import asyncHandler from '../middleware/asyncHandler.js';
-import { db, storage } from '../config/firebaseConfig.js';
+import { db } from '../config/firebaseConfig.js';
+import admin from 'firebase-admin';
 
-// @desc    Get all products (public)
-// @route   GET /api/products
-// @access  Public
-const getAllProducts = asyncHandler(async (req, res) => {
-  // This route is similar to market/search but simpler
-  // You might want to consolidate this with marketController
-  const productsSnapshot = await db.collection('products')
-    .where('status', '==', 'available')
-    .orderBy('createdAt', 'desc')
-    .get();
-    
-  const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  res.status(200).json({ success: true, data: products });
-});
-
-// @desc    Create a new product
+// @desc    Create a new product (Post)
 // @route   POST /api/products
-// @access  Private/Seller
+// @access  Private (user)
 const createProduct = asyncHandler(async (req, res) => {
-  const { title, description, wasteType, animalType, feedType, quantity, price, unit, location, images, npk } = req.body;
-  const user = req.user;
+  // สมมติว่า userId ถูกแนบมาจาก authMiddleware
+  const userId = req.user.uid; 
+  const { title, animalType, wasteType, quantity, price, unit, location, npk, feedType, description, images, contactPhone } = req.body;
+  
+  // Basic validation (ควรเพิ่มการตรวจสอบที่เข้มงวดกว่านี้)
+  if (!title || !animalType || !wasteType || !quantity || !price || !location) {
+     res.status(400);
+     throw new Error('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน');
+  }
 
   const newProduct = {
-    userId: user.uid,
-    farmName: user.farmName || user.name,
+    userId,
     title,
-    description,
-    wasteType,
     animalType,
-    feedType,
-    quantity: Number(quantity),
-    price: Number(price),
+    wasteType,
+    quantity: parseFloat(quantity),
+    price: parseFloat(price),
     unit,
-    location,
-    images: images || [], // Assume images are URLs for now
-    npk: npk || {}, // e.g., { n: 5, p: 2, k: 3 }
-    status: 'available', // available, sold
-    verified: false, // Admin or system can verify this
+    // FIX: location ควรถูกแปลงเป็น Object ที่มี lat/lng จริงๆ จากฝั่ง Client หรือ Server
+    location: { 
+        address: location,
+        lat: 18.790, // Mock lat
+        lng: 98.980, // Mock lng
+    },
+    npk,
+    feedType,
+    description,
+    images,
+    contactPhone,
+    status: 'available',
+    verified: true,
+    sold: false,
     rating: 0,
     reviewCount: 0,
-    createdAt: new Date().toISOString(),
+    distance: Math.random() * 20, // Mock distance
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   };
 
-  const productRef = await db.collection('products').add(newProduct);
+  const docRef = await db.collection('products').add(newProduct);
 
-  res.status(201).json({ success: true, data: { id: productRef.id, ...newProduct } });
+  res.status(201).json({ 
+    success: true, 
+    message: 'สร้างโพสต์สินค้าสำเร็จ',
+    data: { id: docRef.id, ...newProduct } 
+  });
 });
 
-// @desc    Get a single product by ID
-// @route   GET /api/products/:id
-// @access  Public
-const getProductById = asyncHandler(async (req, res) => {
+// @desc    Update a product
+// @route   PUT /api/products/:id
+// @access  Private (owner of the product)
+const updateProduct = asyncHandler(async (req, res) => {
   const productId = req.params.id;
+  const userId = req.user.uid; 
+  const updates = req.body;
+
   const productDoc = await db.collection('products').doc(productId).get();
 
   if (!productDoc.exists) {
@@ -61,75 +71,58 @@ const getProductById = asyncHandler(async (req, res) => {
     throw new Error('Product not found');
   }
 
-  res.status(200).json({ success: true, data: { id: productDoc.id, ...productDoc.data() } });
-});
-
-// @desc    Update a product
-// @route   PUT /api/products/:id
-// @access  Private/Seller
-const updateProduct = asyncHandler(async (req, res) => {
-  const productId = req.params.id;
-  const user = req.user;
-  const updatedData = req.body;
-
-  const productRef = db.collection('products').doc(productId);
-  const productDoc = await productRef.get();
-
-  if (!productDoc.exists) {
-    res.status(404);
-    throw new Error('Product not found');
+  // ตรวจสอบว่าเป็นเจ้าของโพสต์หรือไม่
+  if (productDoc.data().userId !== userId) {
+    res.status(403);
+    throw new Error('ไม่ได้รับอนุญาตให้แก้ไขโพสต์นี้');
   }
 
-  if (productDoc.data().userId !== user.uid) {
-    res.status(401);
-    throw new Error('User not authorized to update this product');
-  }
+  // เตรียมข้อมูลอัปเดตและแปลง string เป็น number
+  const updatedData = {
+    ...updates,
+    quantity: parseFloat(updates.quantity),
+    price: parseFloat(updates.price),
+    // location: updates.location เป็น string ต้องระวังถ้ามีการส่ง lat/lng มา
+    npk: updates.npk || productDoc.data().npk, 
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
 
-  // Remove fields that should not be updated this way
-  delete updatedData.id;
-  delete updatedData.userId;
-  delete updatedData.farmName;
-  delete updatedData.createdAt;
+  await db.collection('products').doc(productId).update(updatedData);
 
-  updatedData.updatedAt = new Date().toISOString();
-
-  await productRef.update(updatedData);
-
-  res.status(200).json({ success: true, data: { id: productId, ...updatedData } });
+  res.status(200).json({ 
+    success: true, 
+    message: 'บันทึกการแก้ไขสินค้าสำเร็จ',
+    data: { id: productId, ...productDoc.data(), ...updatedData } 
+  });
 });
 
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
-// @access  Private/Seller
+// @access  Private (owner of the product)
 const deleteProduct = asyncHandler(async (req, res) => {
   const productId = req.params.id;
-  const user = req.user;
+  const userId = req.user.uid; 
 
-  const productRef = db.collection('products').doc(productId);
-  const productDoc = await productRef.get();
+  const productDoc = await db.collection('products').doc(productId).get();
 
   if (!productDoc.exists) {
     res.status(404);
     throw new Error('Product not found');
   }
 
-  if (productDoc.data().userId !== user.uid) {
-    res.status(401);
-    throw new Error('User not authorized to delete this product');
+  // ตรวจสอบว่าเป็นเจ้าของโพสต์หรือไม่
+  if (productDoc.data().userId !== userId) {
+    res.status(403);
+    throw new Error('ไม่ได้รับอนุญาตให้ลบโพสต์นี้');
   }
 
-  // TODO: Delete images from storage
-  // TODO: Delete related bookings, chats? (or archive)
-  
-  await productRef.delete();
+  await db.collection('products').doc(productId).delete();
 
-  res.status(200).json({ success: true, message: 'Product deleted' });
+  res.status(200).json({ success: true, message: 'ลบโพสต์สินค้าสำเร็จ' });
 });
 
 export {
-  getAllProducts,
   createProduct,
-  getProductById,
   updateProduct,
   deleteProduct
 };

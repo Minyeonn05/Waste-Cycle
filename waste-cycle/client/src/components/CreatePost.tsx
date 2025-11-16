@@ -134,15 +134,13 @@ export function CreatePost({ user, onBack, editingPost }: CreatePostProps) {
 
     try {
       if (editingPost) {
-        // FIX: ใช้ API call สำหรับอัปเดต (สมมติว่ามี PUT /posts/:id)
+        // FIX: ใช้ API call สำหรับอัปเดต (PUT /community/posts/:id)
         const res = await api.put(`/community/posts/${editingPost.id}`, postData); 
         toast.success(res.data.message || 'บันทึกการแก้ไขสำเร็จ');
-        // onUpdate(editingPost.id, postData); // ลบ Mock Call
       } else {
-        // FIX: ใช้ API call สำหรับสร้างโพสต์
+        // FIX: ใช้ API call สำหรับสร้างโพสต์ (POST /community/posts)
         const res = await api.post('/community/posts', postData);
         toast.success(res.data.message || 'สร้างโพสต์สำเร็จ');
-        // onCreate(postData); // ลบ Mock Call
       }
       onBack(); // กลับไปหน้าก่อนหน้าหลังจากสำเร็จ
       

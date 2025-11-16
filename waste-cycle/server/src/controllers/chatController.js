@@ -64,6 +64,7 @@ const createChatRoom = asyncHandler(async (req, res) => {
     createdAt: new Date().toISOString(),
     lastMessage: '',
     timestamp: new Date().toISOString(),
+    status: 'active', // เพิ่ม status เริ่มต้น
   };
 
   const chatRef = await db.collection('chats').add(newChat);
@@ -117,11 +118,13 @@ const postMessage = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to post in this chat');
   }
 
+  const timestamp = new Date().toISOString();
+
   const newMessage = {
     chatId,
     senderId,
     text,
-    timestamp: new Date().toISOString(),
+    timestamp,
   };
 
   const messageRef = await db.collection('chats').doc(chatId).collection('messages').add(newMessage);
@@ -129,7 +132,7 @@ const postMessage = asyncHandler(async (req, res) => {
   // Update last message in chat room
   await chatRef.update({
     lastMessage: text,
-    timestamp: new Date().toISOString(),
+    timestamp: timestamp,
   });
 
   // TODO: Send notification to the other user
@@ -162,6 +165,64 @@ const getMessages = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: messages });
 });
 
+// @desc    Update chat status (e.g., mark as confirmed/canceled sale)
+// @route   PUT /api/chat/:id/status
+// @access  Private
+const updateChatStatus = asyncHandler(async (req, res) => {
+  const chatId = req.params.id;
+  const { status, postId } = req.body; // status could be 'confirmed', 'canceled'
+  const userId = req.user.uid;
+  const validStatuses = ['confirmed', 'canceled'];
+
+  if (!validStatuses.includes(status)) {
+    res.status(400);
+    throw new Error('Invalid status provided');
+  }
+
+  const chatRef = db.collection('chats').doc(chatId);
+  const chatDoc = await chatRef.get();
+
+  if (!chatDoc.exists) {
+    res.status(404);
+    throw new Error('Chat room not found');
+  }
+
+  const chatData = chatDoc.data();
+  
+  // Only the seller (who posted the product) can confirm/cancel the sale
+  if (chatData.sellerId !== userId) {
+    res.status(403);
+    throw new Error('Not authorized. Only the seller can update the chat status.');
+  }
+
+  const updateFields = {
+    status: status,
+    updatedAt: new Date().toISOString(),
+  };
+  
+  // Logic for confirmation (e.g., creating a booking or update a status)
+  if (status === 'confirmed') {
+    // Check if it's already confirmed
+    if (chatData.status === 'confirmed') {
+        return res.status(200).json({ success: true, message: 'Sale already confirmed', data: chatData });
+    }
+    updateFields.confirmationDate = new Date().toISOString();
+    // TODO: Ideally, this should trigger a Booking creation logic here or in a separate controller.
+    await chatRef.update(updateFields);
+
+    res.status(200).json({ success: true, message: 'Sale confirmed successfully', data: { id: chatId, ...chatData, status: 'confirmed' } });
+  } else if (status === 'canceled') {
+     // Update chat room status
+    updateFields.cancellationDate = new Date().toISOString();
+    await chatRef.update(updateFields);
+
+    res.status(200).json({ success: true, message: 'Chat canceled successfully', data: { id: chatId, ...chatData, status: 'canceled' } });
+  } else {
+     await chatRef.update(updateFields);
+     res.status(200).json({ success: true, message: 'Chat status updated successfully', data: { id: chatId, ...chatData, status: status } });
+  }
+});
+
 // @desc    Delete a chat room (Admin only)
 // @route   DELETE /api/chat/:id
 // @access  Private/Admin
@@ -181,5 +242,6 @@ export {
   getChatRoomById,
   postMessage,
   getMessages,
-  deleteChatRoom
+  deleteChatRoom,
+  updateChatStatus
 };

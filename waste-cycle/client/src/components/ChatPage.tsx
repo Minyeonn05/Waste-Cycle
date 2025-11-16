@@ -6,6 +6,8 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import type { User, ChatRoom as AppChatRoom, Post } from '../App';
+// FIX: Import sendChatMessage
+import { sendChatMessage } from '../apiServer'; 
 
 interface ChatPageProps {
   user: User;
@@ -80,35 +82,36 @@ export function ChatPage({ user, chatRooms, posts, confirmedRoomIds, chatMessage
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  // FIX: เปลี่ยน handleSend ให้เรียก API จริง
+  const handleSend = async () => {
     if (!newMessage.trim() || !selectedRoomId) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      senderId: user.id,
-      text: newMessage,
-      timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
-    };
+    const textToSend = newMessage;
+    const currentRoomId = selectedRoomId; 
+    setNewMessage(''); // Clear input immediately for better UX
 
-    setChatMessages(prev => ({
-      ...prev,
-      [selectedRoomId]: [...(prev[selectedRoomId] || []), message],
-    }));
-    setNewMessage('');
-
-    // Simulate response after 1 second
-    setTimeout(() => {
-      const response: Message = {
-        id: (Date.now() + 1).toString(),
-        senderId: selectedRoomId,
-        text: 'ได้เลยครับ ยินดีให้บริการครับ',
-        timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
-      };
+    try {
+      // Call API to send message
+      const res = await sendChatMessage(currentRoomId, textToSend);
+      const serverMessage = res.data.data;
+      
+      // Update local state with server response (real ID/timestamp)
       setChatMessages(prev => ({
         ...prev,
-        [selectedRoomId]: [...(prev[selectedRoomId] || []), response],
+        [currentRoomId]: [...(prev[currentRoomId] || []), {
+          id: serverMessage.id, // Use real server ID
+          senderId: serverMessage.senderId,
+          text: serverMessage.text,
+          // Format server ISO timestamp to local time for display matching the original mock
+          timestamp: new Date(serverMessage.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), 
+        }],
       }));
-    }, 1000);
+
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Restore text if send fails, in a real app should show a toast
+      setNewMessage(textToSend); 
+    }
   };
 
   const handleRoomClick = (roomId: string) => {

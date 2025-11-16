@@ -61,6 +61,7 @@ export const createProfile = (profileData: {
   return api.post('/users/profile', profileData);
 };
 
+// --- PRODUCT ROUTES ---
 export const getProducts = () => {
   return api.get('/products');
 };
@@ -80,7 +81,10 @@ export const updateProduct = (id: string, productData: any) => {
 export const deleteProduct = (id: string) => {
   return api.delete(`/products/${id}`);
 };
+// --- END PRODUCT ROUTES ---
 
+
+// --- CHAT ROUTES ---
 export const getChatRooms = () => {
   return api.get('/chat');
 };
@@ -96,6 +100,16 @@ export const sendChatMessage = (chatId: string, text: string) => {
 export const createChatRoom = (productId: string) => {
   return api.post('/chat', { productId });
 };
+
+// NEW: Functions to manage chat/sale status
+export const confirmSale = (chatId: string, postId: string) => {
+  return api.put(`/chat/${chatId}/status`, { status: 'confirmed', postId });
+};
+
+export const cancelChat = (chatId: string) => {
+  return api.put(`/chat/${chatId}/status`, { status: 'canceled' });
+};
+// --- END CHAT ROUTES ---
 
 export const getUserBookings = (userId: string) => {
   return api.get(`/bookings/user/${userId}`);

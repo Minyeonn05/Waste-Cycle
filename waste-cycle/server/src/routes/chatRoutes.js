@@ -6,6 +6,7 @@ import {
   postMessage,
   getMessages,
   deleteChatRoom,
+  updateChatStatus, // FIX: Import new controller function
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { admin } from '../middleware/roleMiddleware.js';
@@ -17,6 +18,10 @@ router.post('/', protect, createChatRoom);
 router.get('/:id', protect, getChatRoomById);
 router.post('/:id/messages', protect, postMessage);
 router.get('/:id/messages', protect, getMessages);
+
+// FIX: Add route for updating chat status (used for confirming/canceling sale)
+router.put('/:id/status', protect, updateChatStatus); 
+
 router.delete('/:id', protect, admin, deleteChatRoom);
 
 export default router;

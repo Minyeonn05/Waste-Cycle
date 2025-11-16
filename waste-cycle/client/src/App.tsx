@@ -30,6 +30,9 @@ import api, {
   deleteProduct,
   getChatRooms,
   createChatRoom,
+  // FIX: Import new chat status functions
+  confirmSale,
+  cancelChat,
 } from './apiServer'; // แก้ไข Path
 import { Recycle } from 'lucide-react';
 
@@ -58,7 +61,7 @@ export interface Post {
   quantity: number;
   price: number;
   unit: string;
-  location: { lat: number; lng: number }; // <-- แก้ไข
+  location: string; // FIX: เปลี่ยนกลับเป็น string หรือใช้ type ที่เหมาะสม
   address: string; // <-- เพิ่ม
   distance: number;
   verified: boolean;
@@ -74,7 +77,7 @@ export interface Post {
   sold?: boolean;
 }
 
-// แก้ไข: เพิ่ม 'export'
+// แก้ไข: เพิ่ม 'export' และเพิ่ม 'status'
 export interface ChatRoom {
   id: string;
   postId: string;
@@ -86,6 +89,7 @@ export interface ChatRoom {
   lastMessage: string;
   timestamp: string;
   unread: number;
+  status: 'active' | 'confirmed' | 'canceled'; // FIX: Add status
 }
 
 interface Message {
@@ -102,6 +106,8 @@ export default function App() {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({});
   const [confirmedChatRooms, setConfirmedChatRooms] = useState<Set<string>>(new Set());
+  // FIX: Add state for real unread count
+  const [unreadCount, setUnreadCount] = useState(0); 
   
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isEditingPost, setIsEditingPost] = useState(false);
@@ -119,8 +125,37 @@ export default function App() {
         getProducts(),
         getChatRooms(),
       ]);
-      setPosts(productsResponse.data.data || []);
-      setChatRooms(chatRoomsResponse.data.data || []);
+      
+      const fetchedPosts: Post[] = productsResponse.data.data || [];
+      const fetchedChatRooms: ChatRoom[] = chatRoomsResponse.data.data || [];
+      
+      let totalUnread = 0;
+      const confirmedIds = new Set<string>();
+      
+      fetchedChatRooms.forEach(room => {
+        // Assuming the server returns an 'unread' count for the logged-in user
+        if (room.unread > 0) {
+          totalUnread += room.unread; 
+        }
+        
+        if (room.status === 'confirmed') {
+          confirmedIds.add(room.id);
+        }
+      });
+
+      // Update sold status based on chat status for display purposes
+      const updatedPosts = fetchedPosts.map(post => {
+        const isConfirmed = fetchedChatRooms.some(
+          room => room.postId === post.id && room.status === 'confirmed'
+        );
+        return { ...post, sold: isConfirmed };
+      });
+
+      setPosts(updatedPosts);
+      setChatRooms(fetchedChatRooms);
+      setConfirmedChatRooms(confirmedIds);
+      setUnreadCount(totalUnread); // FIX: Set real unread count
+      
     } catch (err) {
       console.error("Failed to fetch data:", err);
       setError("ไม่สามารถดึงข้อมูลได้");
@@ -195,6 +230,8 @@ export default function App() {
     setPosts([]);
     setChatRooms([]);
     setChatMessages({});
+    setConfirmedChatRooms(new Set());
+    setUnreadCount(0); // Clear unread count on logout
     setAuthToken(null);
     setCurrentPage('landing');
   };
@@ -222,9 +259,12 @@ export default function App() {
 
   const handleCreatePost = async (newPost: Omit<Post, 'id' | 'userId' | 'createdDate' | 'rating' | 'reviewCount'>) => {
     try {
-      await createProduct(newPost);
-      await fetchAllData();
-      navigateTo('marketplace');
+      // FIX: The server endpoint for posts is under /community
+      const res = await api.post('/community/posts', newPost);
+      if(res.data.success) {
+         await fetchAllData();
+         navigateTo('marketplace');
+      }
     } catch (err) {
       console.error("Failed to create post:", err);
       setError("ไม่สามารถสร้างโพสต์ได้");
@@ -233,11 +273,14 @@ export default function App() {
 
   const handleUpdatePost = async (postId: string, updatedData: Partial<Post>) => {
     try {
-      await updateProduct(postId, updatedData);
-      await fetchAllData();
-      setSelectedPostId(null);
-      setIsEditingPost(false);
-      navigateTo('marketplace');
+      // FIX: The server endpoint for posts is under /community
+      const res = await api.put(`/community/posts/${postId}`, updatedData);
+      if(res.data.success) {
+         await fetchAllData();
+         setSelectedPostId(null);
+         setIsEditingPost(false);
+         navigateTo('marketplace');
+      }
     } catch (err) {
       console.error("Failed to update post:", err);
       setError("ไม่สามารถอัปเดตโพสต์ได้");
@@ -246,7 +289,10 @@ export default function App() {
 
   const handleDeletePost = async (postId: string) => {
     try {
-      await deleteProduct(postId);
+      // Assuming a deletePost API exists under /community, but for now, rely on previous structure 
+      // where deleteProduct might be mapped to it if it was a mock before. 
+      // Since deleteProduct API is defined in apiServer, stick to it.
+      await deleteProduct(postId); 
       await fetchAllData();
       navigateTo('marketplace');
     } catch (err) {
@@ -278,23 +324,30 @@ export default function App() {
     setChatPostId(null);
   };
   
-  const handleConfirmSale = (postId: string, roomId: string) => {
-    setPosts(posts.map(p => p.id === postId ? { ...p, sold: true } : p));
-    setConfirmedChatRooms(prev => new Set([...prev, roomId]));
+  // FIX: Implement API calls for confirm and cancel
+  const handleConfirmSale = async (postId: string, roomId: string) => {
+    try {
+      await confirmSale(roomId, postId);
+      // Re-fetch all data to ensure chat status, sold status, and chat list are updated
+      await fetchAllData(); 
+    } catch (err) {
+      console.error("Failed to confirm sale:", err);
+      setError("ไม่สามารถยืนยันการขายได้");
+    }
   };
 
-  const handleCancelChat = (roomId: string) => {
-    setChatRooms(prev => prev.filter(room => room.id !== roomId));
-    setChatMessages(prev => {
-      const newMessages = { ...prev };
-      delete newMessages[roomId];
-      return newMessages;
-    });
-    setConfirmedChatRooms(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(roomId);
-      return newSet;
-    });
+  const handleCancelChat = async (roomId: string) => {
+    try {
+      await cancelChat(roomId);
+      // Re-fetch all data to ensure chat status and chat list are updated
+      await fetchAllData(); 
+      // After cancelling, navigate away from chat page
+      setSelectedRoomId(null);
+      navigateTo('dashboard');
+    } catch (err) {
+      console.error("Failed to cancel chat:", err);
+      setError("ไม่สามารถยกเลิกการสนทนาได้");
+    }
   };
 
   if (isLoading) {
@@ -320,7 +373,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} onLogout={handleLogout} onNavigate={navigateTo} currentPage={currentPage} />
+      <Header 
+        user={user} 
+        onLogout={handleLogout} 
+        onNavigate={navigateTo} 
+        currentPage={currentPage}
+        unreadCount={unreadCount} // FIX: Pass real unread count
+      />
       
       <main className="pt-16">
         {error && (
@@ -359,8 +418,9 @@ export default function App() {
           <CreatePost 
             user={user} 
             onBack={() => navigateTo('marketplace')}
-            onCreate={handleCreatePost}
-            onUpdate={handleUpdatePost}
+            // FIX: Remove mock props as they are implemented inside CreatePost.tsx
+            // onCreate={handleCreatePost}
+            // onUpdate={handleUpdatePost}
             editingPost={isEditingPost && currentPost ? currentPost : undefined}
           />
         )}

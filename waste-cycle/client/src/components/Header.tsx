@@ -9,9 +9,10 @@ interface HeaderProps {
   onLogout: () => void;
   onNavigate: (page: string) => void;
   currentPage: string;
+  unreadCount: number; // FIX: Add prop for unread count
 }
 
-export function Header({ user, onLogout, onNavigate, currentPage }: HeaderProps) {
+export function Header({ user, onLogout, onNavigate, currentPage, unreadCount }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (!user) return null;
@@ -91,9 +92,12 @@ export function Header({ user, onLogout, onNavigate, currentPage }: HeaderProps)
                   className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <MessageCircle className="w-5 h-5 text-gray-700" />
-                  <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[20px]">
-                    3
-                  </Badge>
+                  {/* FIX: Use real unread count */}
+                  {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[20px]">
+                      {unreadCount}
+                    </Badge>
+                  )}
                 </button>
               )}
 

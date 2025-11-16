@@ -101,6 +101,13 @@ export const getUserBookings = (userId: string) => {
   return api.get(`/bookings/user/${userId}`);
 };
 
+// --- NEW FUNCTION FOR USER STATS ---
+export const getUserStats = () => {
+  // Assuming a new endpoint exists for fetching regular user's dashboard stats (purchases, revenue, rating)
+  return api.get('/users/stats'); 
+};
+// ------------------------------------
+
 export const createBooking = (bookingData: any) => {
   return api.post('/bookings', bookingData);
 };

@@ -15,37 +15,20 @@ import {
 } from 'firebase/auth';
 import app from './firebaseConfig';
 
-// 🚨 ประเภทข้อมูล (Type) ที่ยังไม่ได้กำหนด (ใช้ 'any' เป็นการชั่วคราว)
-// Front-end จะต้องสร้าง Type เหล่านี้เพื่อให้ทำงานได้สมบูรณ์
-type ProfileFormData = any;
-type AuthData = any;
-type BookingData = any;
-type FertilizerAdviceData = any;
-type MarketPriceData = any;
-type ProductData = any;
-type ProductReviewData = any;
-type CommunityPostData = any;
-type CommentData = any;
-type MatchData = any;
-type FarmData = any;
-type ChatMessageData = any;
-type AnalyzeWasteData = any;
-
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_URL = 'http://localhost:8000/api';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_URL,
 });
 
 const auth = getAuth(app);
 
 export const setAuthToken = (token: string | null) => {
   if (token) {
+    localStorage.setItem('authToken', token);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {
+    localStorage.removeItem('authToken');
     delete api.defaults.headers.common['Authorization'];
   }
 };

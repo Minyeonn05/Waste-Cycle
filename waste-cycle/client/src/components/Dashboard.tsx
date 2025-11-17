@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { type User, type Post } from '../App';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Map, ShoppingBag, Plus, Settings, MessageSquare, BarChart2, Edit, Trash, Eye } from 'lucide-react';
-import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from '@react-google-maps/api';
+import { Map, ShoppingBag, Plus, Settings, MessageSquare, BarChart2, Edit, Trash, Eye, Navigation } from 'lucide-react';
+import { GoogleMap, MarkerF, InfoWindowF } from '@react-google-maps/api';
+import { LocationPermissionHandler } from './LocationPermissionHandler';
+import { getUserLocation, openNavigation, type Location } from '../utils/locationUtils';
 
 interface DashboardProps {
   user: User;
@@ -14,6 +16,8 @@ interface DashboardProps {
   onEdit: (postId: string) => void;
   onDelete: (postId: string) => void;
   onChat: (postId: string) => void;
+  isLoaded: boolean;
+  loadError: Error | undefined;
 }
 
 const mapContainerStyle = {
@@ -27,8 +31,6 @@ const defaultCenter = {
   lng: 98.9853
 };
 
-const libraries = ["places"];
-
 export function Dashboard({
   user,
   onNavigate,
@@ -38,37 +40,94 @@ export function Dashboard({
   onEdit,
   onDelete,
   onChat,
+  isLoaded,
+  loadError,
 }: DashboardProps) {
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyAPfTBWHeEn1Oi-DEkW2afcidFLaznmTvU", // ใส่ Key ของคุณ (หรือ import จาก .env)
-    libraries: libraries as any,
-  });
-
   const [selectedMarker, setSelectedMarker] = useState<Post | null>(null);
+  const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [mapCenter, setMapCenter] = useState<Location>(defaultCenter);
+  const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
 
-  // กรองโพสต์ที่มี location ถูกต้อง
+  // Initialize Geocoder when map is loaded
+  useEffect(() => {
+    if (isLoaded && window.google) {
+      setGeocoder(new window.google.maps.Geocoder());
+    }
+  }, [isLoaded]);
+
+  // Update map center when user location is available
+  useEffect(() => {
+    if (userLocation) {
+      setMapCenter(userLocation);
+      // Pan map to user location
+      if (mapRef.current) {
+        mapRef.current.panTo(userLocation);
+      }
+    }
+  }, [userLocation]);
+
+  // Filter posts with valid coordinates
   const postsWithCoords = useMemo(() => {
     return allPosts.filter(post => post.location && typeof post.location.lat === 'number' && typeof post.location.lng === 'number');
   }, [allPosts]);
 
+  const handleLocationReady = (location: Location) => {
+    setUserLocation(location);
+  };
+
+  const handleNavigate = (destination: Location) => {
+    if (!userLocation) {
+      // If user location is not available, use map center as fallback
+      const origin = mapCenter;
+      openNavigation(origin, destination);
+    } else {
+      openNavigation(userLocation, destination);
+    }
+  };
+
+  const handleMapLoad = (map: google.maps.Map) => {
+    mapRef.current = map;
+  };
+
   const renderMap = () => {
     if (loadError) return <div className="text-red-500">Error loading maps. Please check your API key.</div>;
-    if (!isLoaded) return <div>Loading Maps...</div>;
+    if (!isLoaded) return <div>Loading map...</div>;
 
     return (
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        center={defaultCenter}
-        zoom={12}
+        center={mapCenter}
+        zoom={userLocation ? 13 : 12}
+        onLoad={handleMapLoad}
       >
+        {/* User location marker */}
+        {userLocation && (
+          <MarkerF
+            position={userLocation}
+            icon={{
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: '#4285F4',
+              fillOpacity: 1,
+              strokeColor: '#FFFFFF',
+              strokeWeight: 2,
+            }}
+            title="ตำแหน่งของคุณ"
+          />
+        )}
+
+        {/* Farm/post markers */}
         {postsWithCoords.map((post) => (
           <MarkerF
             key={post.id}
             position={post.location}
             onClick={() => setSelectedMarker(post)}
+            title={post.title}
           />
         ))}
 
+        {/* Info Window for selected marker */}
         {selectedMarker && (
           <InfoWindowF
             position={selectedMarker.location}
@@ -76,9 +135,28 @@ export function Dashboard({
           >
             <div className="p-2 max-w-xs">
               <h4 className="font-bold text-sm mb-1">{selectedMarker.title}</h4>
-              <p className="text-xs mb-1">{selectedMarker.address}</p>
-              <p className="text-xs mb-2 font-semibold">{selectedMarker.price} บาท / {selectedMarker.unit}</p>
-              <Button size="xs" onClick={() => onViewDetail(selectedMarker.id)}>ดูรายละเอียด</Button>
+              <p className="text-xs mb-1 text-gray-600">{selectedMarker.address}</p>
+              <p className="text-xs mb-2 font-semibold text-green-600">
+                {selectedMarker.price} บาท / {selectedMarker.unit}
+              </p>
+              <div className="flex space-x-2">
+                <Button 
+                  size="xs" 
+                  variant="outline"
+                  onClick={() => onViewDetail(selectedMarker.id)}
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  ดูรายละเอียด
+                </Button>
+                <Button 
+                  size="xs" 
+                  onClick={() => handleNavigate(selectedMarker.location)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Navigation className="w-3 h-3 mr-1" />
+                  นำทาง
+                </Button>
+              </div>
             </div>
           </InfoWindowF>
         )}
@@ -98,6 +176,15 @@ export function Dashboard({
         <ActionButton icon={Map} label="แผนที่" onClick={() => onNavigate('circular-view')} />
         <ActionButton icon={Settings} label="โปรไฟล์" onClick={() => onNavigate('profile')} />
       </div>
+
+      {/* Location Permission Handler */}
+      {isLoaded && (
+        <LocationPermissionHandler
+          onLocationReady={handleLocationReady}
+          geocoder={geocoder || undefined}
+          isLoading={!isLoaded}
+        />
+      )}
 
       {/* Google Map Section */}
       <Card className="mb-8">

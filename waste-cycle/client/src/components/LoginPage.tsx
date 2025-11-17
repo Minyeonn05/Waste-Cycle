@@ -8,11 +8,12 @@ import type { User } from '../App';
 
 interface LoginPageProps {
   onLogin: (email: string, password: string) => Promise<void>;
-  onBack: () => void;
+  onBack?: () => void;
   onRegisterClick: () => void;
+  showBackButton?: boolean;
 }
 
-export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) {
+export function LoginPage({ onLogin, onBack, onRegisterClick, showBackButton = false }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -39,9 +40,11 @@ export function LoginPage({ onLogin, onBack, onRegisterClick }: LoginPageProps) 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <Button variant="ghost" onClick={onBack} className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" /> กลับ
-        </Button>
+        {showBackButton && onBack && (
+          <Button variant="ghost" onClick={onBack} className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" /> กลับ
+          </Button>
+        )}
 
         <Card>
           <CardHeader className="text-center">

@@ -12,11 +12,18 @@ import { admin } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
+// IMPORTANT: Order matters! More specific routes must come before parameterized routes
+// Routes for messages (more specific) must come before /:id route
+
 router.get('/', protect, getChatRooms);
 router.post('/', protect, createChatRoom);
-router.get('/:id', protect, getChatRoomById);
-router.post('/:id/messages', protect, postMessage);
+
+// Messages routes (more specific - must come before /:id)
 router.get('/:id/messages', protect, getMessages);
+router.post('/:id/messages', protect, postMessage);
+
+// Chat room routes (less specific - must come after /:id/messages)
+router.get('/:id', protect, getChatRoomById);
 router.delete('/:id', protect, admin, deleteChatRoom);
 
 export default router;

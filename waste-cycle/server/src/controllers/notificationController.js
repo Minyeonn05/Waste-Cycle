@@ -2,7 +2,13 @@
 import { db } from '../config/firebaseConfig.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 
-const notificationsCollection = db.collection('notifications');
+// Helper function to safely get notifications collection
+const getNotificationsCollection = () => {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please check Firebase configuration.');
+  }
+  return db.collection('notifications');
+};
 
 /**
  * @desc    ดึงการแจ้งเตือนทั้งหมดของผู้ใช้
@@ -11,6 +17,7 @@ const notificationsCollection = db.collection('notifications');
  */
 export const getUserNotifications = asyncHandler(async (req, res, next) => {
   const userId = req.user.uid;
+  const notificationsCollection = getNotificationsCollection();
 
   const snapshot = await notificationsCollection
     .where('userId', '==', userId)
@@ -34,6 +41,7 @@ export const getUserNotifications = asyncHandler(async (req, res, next) => {
 export const markAsRead = asyncHandler(async (req, res, next) => {
   const userId = req.user.uid;
   const { id } = req.params;
+  const notificationsCollection = getNotificationsCollection();
 
   const notifRef = notificationsCollection.doc(id);
   const doc = await notifRef.get();

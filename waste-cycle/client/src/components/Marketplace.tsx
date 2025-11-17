@@ -27,8 +27,11 @@ export function Marketplace({ user, posts, onViewDetail, onEdit, onDelete, onCha
   const [sortBy, setSortBy] = useState('distance');
   const [showFilters, setShowFilters] = useState(true);
 
-  const myPosts = posts.filter(post => post.userId === user.id);
-  const otherPosts = posts.filter(post => post.userId !== user.id);
+  // CRITICAL FIX: Use String() for comparison to handle type mismatches
+  // This ensures userId comparison works correctly even after server restart
+  const currentUserId = String(user.id || user.uid);
+  const myPosts = posts.filter(post => String(post.userId) === currentUserId);
+  const otherPosts = posts.filter(post => String(post.userId) !== currentUserId);
   
   const allPosts = [...myPosts, ...otherPosts];
   const marketplacePosts = otherPosts;
@@ -150,7 +153,7 @@ export function Marketplace({ user, posts, onViewDetail, onEdit, onDelete, onCha
                 <ModernPostCard 
                   key={post.id} 
                   post={post} 
-                  isMyPost={post.userId === user.id}
+                  isMyPost={String(post.userId) === String(user.id || user.uid)}
                   onViewDetail={onViewDetail}
                   onEdit={onEdit}
                   onDelete={onDelete}
@@ -224,7 +227,7 @@ function ModernPostCard({ post, isMyPost, onViewDetail, onEdit, onDelete, onChat
     <Card className="overflow-hidden hover:shadow-xl transition-shadow">
       {/* Image Section */}
       <div className="relative h-48 bg-gradient-to-br from-green-100 to-blue-100">
-        {post.images && post.images.length > 0 ? (
+        {post.images && Array.isArray(post.images) && post.images.length > 0 && post.images[0] ? (
           <ImageWithFallback 
             src={post.images[0]} 
             alt={post.title}
@@ -236,24 +239,22 @@ function ModernPostCard({ post, isMyPost, onViewDetail, onEdit, onDelete, onChat
           </div>
         )}
         
-        {/* Verified Badge */}
-        {post.verified && !isChatting && !post.sold && (
-          <Badge className="absolute top-3 right-3 bg-green-500 text-white">
-            ✓ พร้อมขาย
-          </Badge>
-        )}
-        
-        {/* Chatting Badge */}
-        {isChatting && !post.sold && (
-          <Badge className="absolute top-3 right-3 bg-yellow-400 text-gray-900 shadow-lg">
-            💬 กำลังพูดคุย
-          </Badge>
-        )}
-        
-        {/* Sold Badge */}
-        {post.sold && (
+        {/* Status Badge - Always show, priority: Sold > Chatting > Verified > Pending */}
+        {post.sold ? (
           <Badge className="absolute top-3 right-3 bg-red-500 text-white shadow-lg">
             ✓ ขายแล้ว
+          </Badge>
+        ) : isChatting ? (
+          <Badge className="absolute top-3 right-3 bg-yellow-500 text-white shadow-lg font-semibold">
+            💬 กำลังพูดคุย
+          </Badge>
+        ) : post.verified ? (
+          <Badge className="absolute top-3 right-3 bg-green-500 text-white shadow-lg">
+            ✓ พร้อมขาย
+          </Badge>
+        ) : (
+          <Badge className="absolute top-3 right-3 bg-black text-white shadow-lg">
+            ⏳ รอตรวจสอบ
           </Badge>
         )}
       </div>
@@ -266,7 +267,7 @@ function ModernPostCard({ post, isMyPost, onViewDetail, onEdit, onDelete, onChat
         {/* Location */}
         <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
           <MapPin className="w-4 h-4" />
-          <span>{post.location} · {post.distance.toFixed(0)} กม.</span>
+          <span>{post.address} · {post.distance.toFixed(0)} กม.</span>
         </div>
 
         {/* NPK Values */}

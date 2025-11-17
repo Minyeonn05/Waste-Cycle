@@ -1,18 +1,35 @@
 import { useState } from 'react';
-import { MapPin, Phone, Mail, Calendar, Star, Package, TrendingUp, Edit, Save, X } from 'lucide-react';
+import { MapPin, Phone, Mail, Calendar, Star, Package, TrendingUp, Edit, Save, X, Eye, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import type { User } from '../App';
+import type { User, Post } from '../App';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface ProfilePageProps {
   user: User;
+  posts: Post[];              // Only current user's posts (filtered by userId in backend)
+  onViewDetail: (postId: string) => void;
+  onEdit: (postId: string) => void;
+  onDelete: (postId: string) => void;
 }
 
-export function ProfilePage({ user }: ProfilePageProps) {
+/**
+ * ProfilePage Component
+ * 
+ * MULTI-USER SUPPORT:
+ * - This page displays ONLY the current logged-in user's posts
+ * - Posts are filtered by userId in the backend (getMyProducts API)
+ * - Each user sees only their own posts when they visit their profile
+ * 
+ * Example:
+ * - If "นางเอก" logs in → sees only posts where userId === "นางเอก's userId"
+ * - If "นายบี" logs in → sees only posts where userId === "นายบี's userId"
+ */
+export function ProfilePage({ user, posts, onViewDetail, onEdit, onDelete }: ProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({
     name: user.name,
@@ -60,7 +77,7 @@ export function ProfilePage({ user }: ProfilePageProps) {
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span>{user.name[0]}</span>
+                    <span>{user?.name?.[0] || 'U'}</span>
                   )}
                 </div>
                 <Badge className="absolute top-0 right-0 bg-green-500 text-white">
@@ -130,9 +147,10 @@ export function ProfilePage({ user }: ProfilePageProps) {
                   <>
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h1 className="text-2xl mb-1">{user.name}</h1>
-                        <p className="text-gray-600 mb-3">{user.farmName}</p>
-                        <p className="text-sm text-gray-600">{user.email}</p>
+                        {/* MULTI-USER SAFETY: Check user data before displaying */}
+                        <h1 className="text-2xl mb-1">{user?.name ?? 'ผู้ใช้'}</h1>
+                        <p className="text-gray-600 mb-3">{user?.farmName ?? ''}</p>
+                        <p className="text-sm text-gray-600">{user?.email ?? ''}</p>
                       </div>
                       <Button variant="outline" onClick={() => setIsEditing(true)}>
                         <Edit className="w-4 h-4 mr-2" />
@@ -144,15 +162,15 @@ export function ProfilePage({ user }: ProfilePageProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-gray-400" />
-                        <span>{editedData.location}</span>
+                        <span>{editedData.location || 'ยังไม่ได้ระบุ'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="w-4 h-4 text-gray-400" />
-                        <span>{editedData.phone}</span>
+                        <span>{editedData.phone || 'ยังไม่ได้ระบุ'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4 text-gray-400" />
-                        <span>{editedData.email}</span>
+                        <span>{user?.email ?? editedData.email ?? 'ยังไม่ได้ระบุ'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-400" />
@@ -179,7 +197,7 @@ export function ProfilePage({ user }: ProfilePageProps) {
           <Card className="bg-blue-50">
             <CardContent className="pt-6 text-center">
               <Package className="w-12 h-12 text-blue-600 mx-auto mb-3" />
-              <p className="text-4xl text-blue-600 mb-2">45</p>
+              <p className="text-4xl text-blue-600 mb-2">{posts.length}</p>
               <p className="text-gray-600">รายการทั้งหมด</p>
             </CardContent>
           </Card>
@@ -204,14 +222,79 @@ export function ProfilePage({ user }: ProfilePageProps) {
           <TabsContent value="history">
             <Card>
               <CardHeader>
-                <CardTitle>กิจกรรมล่าสุด</CardTitle>
+                <CardTitle>โพสต์ของฉัน ({posts.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {transactions.map(transaction => (
-                    <TransactionCard key={transaction.id} transaction={transaction} />
-                  ))}
-                </div>
+                {posts.length === 0 ? (
+                  <div className="py-12 text-center text-gray-500">
+                    <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p>ยังไม่มีโพสต์</p>
+                    <p className="text-sm mt-2">ไปที่ Marketplace เพื่อสร้างโพสต์แรกของคุณ</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {posts.map(post => (
+                      <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        {/* Post Image */}
+                        <div className="relative h-48 bg-gradient-to-br from-green-100 to-blue-100">
+                          {post.images && Array.isArray(post.images) && post.images.length > 0 && post.images[0] ? (
+                            <ImageWithFallback 
+                              src={post.images[0]} 
+                              alt={post.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-16 h-16 text-gray-300" />
+                            </div>
+                          )}
+                          {post.sold && (
+                            <Badge className="absolute top-3 right-3 bg-red-500 text-white">
+                              ✓ ขายแล้ว
+                            </Badge>
+                          )}
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="font-semibold mb-2 truncate">{post.title}</h3>
+                          <p className="text-sm text-gray-600 mb-2">{post.farmName}</p>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-lg text-green-600">฿{post.price}</p>
+                            <p className="text-sm text-gray-500">{post.quantity} {post.unit}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => onViewDetail(post.id)}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              ดู
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => onEdit(post.id)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                if (confirm('คุณต้องการลบโพสต์นี้หรือไม่?')) {
+                                  onDelete(post.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

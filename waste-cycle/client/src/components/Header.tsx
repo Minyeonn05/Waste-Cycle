@@ -106,7 +106,7 @@ export function Header({ user, onLogout, onNavigate, currentPage }: HeaderProps)
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-sm">{user.name[0]}</span>
+                    <span>{user?.name?.[0] ?? ""}</span>
                   )}
                 </div>
                 <span className="text-sm text-gray-700">{user.name}</span>
@@ -153,7 +153,7 @@ export function Header({ user, onLogout, onNavigate, currentPage }: HeaderProps)
                     {user.avatar ? (
                       <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span>{user.name[0]}</span>
+                      <span>{user?.name?.[0] ?? ""}</span>
                     )}
                   </div>
                   <div>

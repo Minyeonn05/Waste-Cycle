@@ -60,13 +60,13 @@ export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat }:
 
         <CardContent className="space-y-6">
           {/* Images */}
-          {post.images && post.images.length > 0 && (
+          {post.images && Array.isArray(post.images) && post.images.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {post.images.map((img, index) => (
                 <div key={index} className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden">
                   <ImageWithFallback 
                     src={img} 
-                    alt={`${post.title} ${index + 1}`}
+                    alt={`${post.title || 'Product'} ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -74,7 +74,7 @@ export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat }:
             </div>
           )}
 
-          {!post.images || post.images.length === 0 && (
+          {(!post.images || !Array.isArray(post.images) || post.images.length === 0) && (
             <div className="w-full h-64 bg-gradient-to-br from-green-100 to-blue-100 rounded-lg flex items-center justify-center">
               <Package className="w-16 h-16 text-gray-300" />
             </div>
@@ -116,7 +116,7 @@ export function PostDetail({ post, onBack, onEdit, onDelete, isMyPost, onChat }:
                 <p className="text-sm text-gray-600 mb-1">ที่อยู่</p>
                 <div className="flex items-start gap-2">
                   <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <p>{post.location}</p>
+                  <p>{post.address}</p>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">ระยะทาง {post.distance.toFixed(1)} กิโลเมตร</p>
               </div>
